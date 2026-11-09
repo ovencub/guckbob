@@ -63,7 +63,7 @@ describe('조리 (GDD 4.3)', () => {
     expect(ev.some((e) => e.k === 'toast' && e.msg === '배식대가 꽉 찼어요')).toBe(true);
     ds.pass[2] = null;
     expect(cmd.collect(s, 0, ev)).toBe(true);
-    expect(ds.pass[2]?.menu).toBe('sundae');
+    expect(s.dayState!.pass[2]?.menu).toBe('sundae');
   });
 
   it('주방장 조리는 절대 타지 않는다 (배식대가 꽉 차도 화구 위에서 대기)', () => {
