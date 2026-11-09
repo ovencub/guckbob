@@ -67,10 +67,11 @@ export class App {
     });
   }
 
-  newGame(name: string, seed = Math.floor(Math.random() * 1e9)): void {
+  newGame(name: string, seed = Math.floor(Math.random() * 1e9), setup?: (s: GameState) => void): void {
     clearSave();
     this.game.hud.show(true);
     const s = newGame(seed, name);
+    setup?.(s);
     this.game.setState(s);
     // 1일차는 돈이 없어 정비할 게 없으니 바로 영업
     this.beginDay();

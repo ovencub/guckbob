@@ -241,7 +241,8 @@ function startLeaving(s: GameState, t: Team): void {
     if (!c) continue;
     if (c.state === 'seated' || c.state === 'sitting') { c.state = 'standing'; c.stateT = 0; }
     else if (c.state === 'spawnWait') c.state = 'gone';
-    else if (c.state === 'toSeat' || c.state === 'enterSeat') { c.state = 'toExit'; walkTo(s, c, geoOf(s.stage).exit); }
+    else if (c.state === 'enterSeat') { c.state = 'exitSeat'; c.stateT = 0; walkTo(s, c, geoOf(s.stage).tables[t.table].seats[c.seat].approach, true); }
+    else if (c.state === 'toSeat') { c.state = 'toExit'; walkTo(s, c, geoOf(s.stage).exit); }
   }
 }
 

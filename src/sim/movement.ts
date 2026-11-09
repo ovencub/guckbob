@@ -2,7 +2,7 @@
 // sep(0.82) 보다 가까워지게 만들지 않는다 → 순서대로 갱신해도 겹침이 생기지 않는다.
 import { CAT_DIM, MOVE } from '../data/layouts';
 import { staticFree, type Vec2 } from './geometry';
-import { findPath, type Blocker } from './grid';
+import { findPath, lineOk, type Blocker } from './grid';
 import { geoOf, gridOf } from './state';
 import type { Cat, GameState } from './types';
 
@@ -65,11 +65,39 @@ export function standingBlockers(s: GameState, c: Cat, range: number): Blocker[]
   return out;
 }
 
+/** 근처 모든 고양이(움직이는 것 포함)를 장애물로 */
+export function nearbyBlockers(s: GameState, c: Cat, range: number): Blocker[] {
+  const out: Blocker[] = [];
+  for (const o of s.dayState!.cats) {
+    if (o === c || !inHall(o)) continue;
+    if (Math.abs(o.x - c.x) > range || Math.abs(o.z - c.z) > range) continue;
+    out.push({ x: o.x, z: o.z, r: CAT_DIM.sep });
+  }
+  return out;
+}
+
+/** 남은 경로 길이 */
+export function remaining(c: Cat): number {
+  if (!c.goal) return 0;
+  let d = 0;
+  let px = c.x;
+  let pz = c.z;
+  for (const p of c.path) { d += Math.hypot(p.x - px, p.z - pz); px = p.x; pz = p.z; }
+  if (!c.path.length) d = Math.hypot(c.goal.x - c.x, c.goal.z - c.z);
+  return d;
+}
+
+function lineOkFrom(s: GameState, c: Cat): boolean {
+  const wp = c.path[0] ?? c.goal!;
+  return lineOk(gridOf(s.stage), { x: c.x, z: c.z }, wp, []);
+}
+
 /** goal 까지 경로 설정. free=true 면 정적 장애물 검사 없이 직선 (좌석 출입) */
 export function walkTo(s: GameState, c: Cat, goal: Vec2, free = false, blockers: Blocker[] = []): boolean {
   c.goal = { x: goal.x, z: goal.z };
   c.free = free;
   c.blockedT = 0;
+  c.bestD = Infinity;
   if (free) { c.path = [c.goal]; return true; }
   const p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, blockers);
   if (!p) { c.path = [c.goal]; return false; }
@@ -103,7 +131,8 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
   let nz = c.z + uz * step;
   let moved = posOk(s, c, nx, nz);
   let side = false;
-  if (!moved) {
+  // 좌석 출입(직선 구간)에서는 옆걸음 금지: 정적 검사를 안 하므로 옆 의자로 밀려날 수 있다
+  if (!moved && !c.free) {
     // 비켜 가기: 진행 방향에서 조금씩 틀어 본다
     for (const deg of MOVE.sidestepDeg) {
       for (const sg of [1, -1]) {
@@ -123,21 +152,21 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
     c.x = nx; c.z = nz;
     c.ry = angleTo(c.ry, Math.atan2(mx, mz), TURN_RATE * dt);
     c.moving = true;
-    c.blockedT = side ? c.blockedT + dt * 0.5 : 0;
-    if (side && !c.free) {
-      // 옆으로 비켰으면 다음 웨이포인트까지 직선이 막혔을 수 있으니 새로 계산
-      const g = c.goal;
-      walkTo(s, c, g, false);
-      c.blockedT += dt * 0.5;
+    if (side && !c.free && !lineOkFrom(s, c)) {
+      // 옆으로 비켰더니 다음 지점까지 직선이 막혔다 → 경로 다시 (끼임 시간은 유지)
+      const bt = c.blockedT; const bd = c.bestD;
+      walkTo(s, c, c.goal!, false);
+      c.blockedT = bt; c.bestD = Math.min(bd, remaining(c) + MOVE.progressEps);
     }
-  } else {
-    c.blockedT += dt;
-    if (c.blockedT > MOVE.stuckReplanSec && !c.free && Math.abs((c.blockedT % MOVE.stuckReplanSec) - dt) < dt) {
-      const g = c.goal;
-      const bt = c.blockedT;
-      walkTo(s, c, g, false, standingBlockers(s, c, 4));
-      c.blockedT = bt;
-    }
+  }
+  // 끼임 = 남은 경로 길이가 줄지 않은 시간 (옆걸음 왕복도 끼임으로 본다)
+  const gd = remaining(c);
+  if (gd < c.bestD - MOVE.progressEps) { c.bestD = gd; c.blockedT = 0; }
+  else c.blockedT += dt;
+  if (!c.free && c.blockedT >= MOVE.stuckReplanSec && c.blockedT - dt < MOVE.stuckReplanSec) {
+    const bt = c.blockedT; const bd = c.bestD;
+    walkTo(s, c, c.goal!, false, nearbyBlockers(s, c, 4));
+    c.blockedT = bt; c.bestD = Math.min(bd, remaining(c) + MOVE.progressEps);
   }
   return false;
 }

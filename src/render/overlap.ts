@@ -38,7 +38,11 @@ export function overlapNow(cats: Array<{ c: Cat; m: CatModel; name: string; seat
   for (const { c, m, name, seat } of cats) {
     if (!m.g.visible || c.state === 'queue') continue;
     shapes(m, sh);
+    const px = m.g.position.x;
+    const pz = m.g.position.z;
     for (const b of colliders) {
+      // 넓은 범위 먼저 거른다 (고양이 최대 반경 0.7)
+      if (px < b.x0 - 1 || px > b.x1 + 1 || pz < b.z0 - 1 || pz > b.z1 + 1) continue;
       if (b.kind === 'stool' && seat) {
         // 자기 의자(앉으러 가는·앉은·일어나는 중)는 제외
         const cx = (b.x0 + b.x1) / 2;

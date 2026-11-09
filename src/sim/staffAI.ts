@@ -1,5 +1,5 @@
 // 직원 AI (GDD 6장): 주방장(화구 2개, 절대 안 탐), 서버(서빙 > 주문 > 치우기), 설거지 알바
-import { KITCHEN_LAYOUT as K } from '../data/layouts';
+import { CAT_DIM, KITCHEN_LAYOUT as K } from '../data/layouts';
 import { MOVE } from '../data/layouts';
 import { SERVER } from '../data/staff';
 import { takeOrder } from './customers';
@@ -83,10 +83,21 @@ function servicePoint(s: GameState, c: Cat, table: number): Vec2 {
   return best;
 }
 
-function pickPoint(s: GameState, slots: number[]): Vec2 {
+function pickPoint(s: GameState, c: Cat, slots: number[]): Vec2 {
   const g = geoOf(s.stage);
-  const x = slots.reduce((a, i) => a + g.passSlots[i].x, 0) / slots.length;
-  return { x: Math.max(K.passX0 + 0.2, Math.min(K.passX1 - 0.2, x)), z: g.pickZ };
+  const x0 = slots.reduce((a, i) => a + g.passSlots[i].x, 0) / slots.length;
+  const others = s.dayState!.cats.filter((o) => o !== c && o.kind === 'server');
+  const lo = K.passX0 + 0.2;
+  const hi = K.passX1 - 0.2;
+  // 다른 서버의 위치·목표와 0.82칸 이상 떨어진, 원하는 곳에서 가장 가까운 지점
+  for (const dx of [0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5, 2.0, -2.0, 2.5, -2.5]) {
+    const x = Math.max(lo, Math.min(hi, x0 + dx));
+    const p = { x, z: g.pickZ };
+    const clash = others.some((o) => Math.hypot(o.x - p.x, o.z - p.z) < CAT_DIM.sep + 0.05
+      || (o.goal && Math.hypot(o.goal.x - p.x, o.goal.z - p.z) < CAT_DIM.sep + 0.05));
+    if (!clash) return p;
+  }
+  return { x: Math.max(lo, Math.min(hi, x0)), z: g.pickZ };
 }
 
 function teamAt(s: GameState, table: number): Team | undefined {
@@ -119,7 +130,7 @@ function chooseTask(s: GameState, c: Cat, cap: number): ServerTask | null {
   });
   if (want.length) {
     for (const i of want) ds.pass[i]!.res = c.id;
-    return { k: 'pick', slots: want, to: pickPoint(s, want) };
+    return { k: 'pick', slots: want, to: pickPoint(s, c, want) };
   }
   // ② 주문 받기 (키오스크 없을 때)
   if (!s.kiosk) {
@@ -215,11 +226,16 @@ export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void
     if (stepWalk(s, c, dt)) {
       if (c.task!.k === 'home') { c.task = null; c.state = 'idle'; return; }
       c.state = 'act'; c.actT = SERVER.actionSec;
-    } else if (c.blockedT > MOVE.stuckPoofSec * 2 && c.goal && spotClear(s, c.goal.x, c.goal.z, c)) {
-      // 오래 끼면 연기와 함께 목표 지점으로 (결정 로그)
-      emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
-      place(c, c.goal.x, c.goal.z); c.goal = null; c.path = []; c.blockedT = 0;
-      emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
+    } else if (c.blockedT > MOVE.stuckPoofSec && c.goal) {
+      if (spotClear(s, c.goal.x, c.goal.z, c)) {
+        // 오래 끼면 연기와 함께 목표 지점으로 (결정 로그)
+        emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
+        place(c, c.goal.x, c.goal.z); c.blockedT = 0;
+        emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
+      } else {
+        // 목표 자리에 누가 있으면 일을 내려놓고 다른 일
+        releaseTask(s, c); c.state = 'idle'; c.goal = null; c.path = []; c.blockedT = 0;
+      }
     }
     return;
   }

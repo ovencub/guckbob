@@ -38,7 +38,7 @@ export function footDist(f: Foot, x: number, z: number): number {
 
 /** 걷는 고양이 중심이 (x,z)에 있을 때 정적 장애물과 안 겹치는가 */
 export function staticFree(g: LayoutGeo, x: number, z: number, ignore?: Foot): boolean {
-  if (x < g.left + CAT_DIM.walkClear || x > g.right - CAT_DIM.bodyR) return false;
+  if (x < g.left + CAT_DIM.tailClear || x > g.right - CAT_DIM.bodyR) return false;
   if (z < g.hallMinZ || z > g.front - CAT_DIM.frontInset) return false;
   for (const f of g.feet) {
     if (f === ignore) continue;
@@ -79,7 +79,7 @@ export function computeLayout(stage: number): LayoutGeo {
   const counterX0 = sink.x - K.sinkW / 2;
   box(counterX0, K.counterRight, 0, K.counterH + 0.07, K.counterZ - K.counterD / 2 - TOP_OVER, counterFront + TOP_OVER, 'counter');
   box(K.passX0 - TOP_OVER, K.passX1 + TOP_OVER, 0, K.passTopY, passBack, passFront, 'counter');
-  feet.push({ t: 'rect', x0: K.passX0 - TOP_OVER, x1: K.passX1 + TOP_OVER, z0: passBack, z1: passFront, clear: CAT_DIM.walkClear });
+  feet.push({ t: 'rect', x0: K.passX0 - TOP_OVER, x1: K.passX1 + TOP_OVER, z0: passBack, z1: passFront, clear: CAT_DIM.tailClear });
 
   const tables: TableGeo[] = [];
   S.tables.forEach((t, id) => {

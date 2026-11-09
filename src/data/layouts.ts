@@ -23,7 +23,7 @@ export interface StageSpec {
 
 // 1단계는 레퍼런스(design/style-preview.html)와 같은 좌표 (2인석만 좌석 진입을 위해 0.4칸 이동, 결정 로그).
 // 확장할 때 테이블이 새 자리로 미끄러져 갈 수 있다(정비 시간이라 손님이 없다). 열 A(x≈-4.4)·B(≈-1.45)·C(≈1.3) 사이에 통로.
-const T1: TableSpec = { kind: 't2', x: -1.35, z: -1.0 };
+const T1: TableSpec = { kind: 't2', x: -1.2, z: -1.0 };
 const T2: TableSpec = { kind: 't4', x: 1.25, z: 0.6 };
 const T3: TableSpec = { kind: 't4', x: -1.45, z: 2.75 };
 const N1: TableSpec = { kind: 't4', x: 1.3, z: 4.45 };
@@ -36,12 +36,12 @@ export const STAGES: readonly StageSpec[] = [
   },
   {
     cost: 900000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
-    tables: [T1, T2, T3, N1, { kind: 't2', x: -3.9, z: 3.2 }, { kind: 't6', x: -2.5, z: 6.95 }, { kind: 't4', x: -3.9, z: -0.55 }],
+    tables: [T1, T2, T3, N1, { kind: 't2', x: -3.9, z: 3.2 }, { kind: 't6', x: -2.5, z: 6.95 }, { kind: 't4', x: -3.75, z: -0.5 }],
   },
   {
     cost: 1950000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
     tables: [
-      T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.55 },
+      T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.5 },
       { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.25 }, { kind: 't4', x: -4.4, z: 3.25 },
     ],
   },
@@ -72,7 +72,7 @@ export const KITCHEN_LAYOUT = {
   passColStep: 0.5,
   passRowZ: [-2.15, -2.45],
   passTopY: 0.89,
-  serverPickGap: 0.5,  // 배식대 앞면에서 서버가 서는 거리
+  serverPickGap: 0.7,  // 배식대 앞면에서 서버가 서는 거리 (돌아설 때 꼬리 0.67)
 } as const;
 
 export const DOOR = {
@@ -96,7 +96,7 @@ export const SEAT_RULES = {
   seatSpacing: 0.9,    // 나란히 앉는 좌석 간격
   bowlInset: 0.2,      // 그릇 = 좌석 쪽 가장자리에서 0.2칸 안쪽
   serviceGap: 0.5,     // 서버 서비스 지점 = 테이블 끝에서 0.5칸
-  approachDists: [0.9, 0.84] as readonly number[], // 좌석으로 들어가기 전 서는 지점 (의자에서). 앞 값부터 시도
+  approachDists: [0.9] as readonly number[], // 좌석으로 들어가기 전 서는 지점 (의자에서). 앞 값부터 시도
   stoolR: 0.2,
   stoolH: 0.42,
   tableTopY: 0.83,
@@ -122,8 +122,9 @@ export const CAT_DIM = {
   sep: 0.82,           // 고양이끼리 최소 중심 거리(수평). 몸 0.40 × 2 + 여유
   kitchenGap: 0.1,     // 홀 고양이는 주방 통로(주방장 줄)에서 sep + 이만큼 떨어진다
   frontInset: 0.3,     // 바닥 앞 끝(+0.1 턱)에서 몸이 넘지 않게
-  walkClear: 0.5,      // 걷는 고양이 ↔ 의자·카운터·벽 (앞발 0.47 포함)
-  tableClear: 0.35,    // 걷는 고양이 ↔ 테이블 상판 (높이가 달라 몸 위쪽만 닿는다)
+  walkClear: 0.53,     // 걷는 고양이 ↔ 의자 (앞발 0.47 + 돌아설 때 꼬리 여유)
+  tailClear: 0.67,     // 걷는 고양이 ↔ 카운터·벽 (돌아설 때 꼬리 0.62 + 굵기 0.05)
+  tableClear: 0.42,    // 걷는 고양이 ↔ 테이블 상판 (서버가 든 앞발 반경 0.3 + 0.1)
   gridCell: 0.125,     // A* 격자 (결정 로그: 0.5 → 0.125, 좁은 통로를 놓치지 않게)
   pathSample: 0.08,    // 직선 경로 검사 간격
 } as const;
@@ -136,6 +137,7 @@ export const MOVE = {
   turnSec: 0.1,
   hopDist: 0.5,        // 의자에서 이 거리 안이면 폴짝 올라탄다
   stuckReplanSec: 0.5,
+  progressEps: 0.05,   // 목표까지 이만큼 가까워져야 '진행'으로 본다
   stuckPoofSec: 1.6,   // 끼어서 못 움직이면 손님은 연기와 함께 자리/출구로 (결정 로그)
   arriveEps: 0.04,
   sidestepDeg: [25, 50, 75, 100],

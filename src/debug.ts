@@ -1,11 +1,10 @@
 // 디버그 도구 (?debug=1 또는 ?debug=overlap). window.__guck 로 e2e 가 조작한다.
 import { SIM_DT } from './data/balance';
-import { CHEF } from './data/staff';
+import { applyPreset } from './debugPreset';
 import type { App } from './app';
 import type { Game } from './game';
 import { OverlapLog } from './render/overlap';
 import { PlayerBot } from './sim/bot';
-import { hire } from './sim/catalog';
 import * as cmd from './sim/commands';
 import { step } from './sim/sim';
 import type { GameState, SimEvent } from './sim/types';
@@ -13,7 +12,7 @@ import type { GameState, SimEvent } from './sim/types';
 export interface DebugApi {
   game: Game;
   app?: App;
-  start(seed: number, tutorial?: boolean): void;
+  start(seed: number, tutorial?: boolean, preset?: 'full'): void;
   state(): GameState;
   cmd: typeof cmd;
   bot(on: boolean, taps?: number): void;
@@ -31,9 +30,9 @@ export function installDebug(game: Game, mode: string, app?: App): DebugApi {
   const api: DebugApi = {
     game,
     app,
-    start(seed, tutorial = false) {
+    start(seed, tutorial = false, preset) {
       document.querySelectorAll('.overlay.start').forEach((n) => n.remove());
-      app!.newGame('고양이 국밥', seed);
+      app!.newGame('고양이 국밥', seed, (s) => { s.tutorial = tutorial; if (preset) applyPreset(s, preset); });
       game.s.tutorial = tutorial;
       if (!tutorial && game.s.dayState) game.s.dayState.scriptedLeft = 0;
     },
@@ -59,20 +58,7 @@ export function installDebug(game: Game, mode: string, app?: App): DebugApi {
       }
       return game.world.overlap.report();
     },
-    preset(name) {
-      const s = game.s;
-      if (name === 'full') {
-        s.stage = 3; s.burners = 6; s.bowls = 30; s.sinkLevel = 3; s.kiosk = true; s.tier = 4;
-        s.menus = { sundae: true, spicy: true, suyuk: true };
-        s.staff = [];
-        for (let i = 0; i < CHEF.max; i++) hire(s, 'chef', 3);
-        hire(s, 'server', 3); hire(s, 'server', 2); hire(s, 'dish', 3);
-        s.promos = [{ id: 'tv', days: 3 }, { id: 'youtube', days: 3 }];
-        for (let i = 0; i < 50; i++) s.reviews.push(4.6);
-        s.money = 5000000;
-        game.world.sync(s);
-      }
-    },
+    preset(name) { applyPreset(game.s, name); game.world.sync(game.s); },
     fast(seconds) {
       const ev: SimEvent[] = [];
       for (let i = 0; i < Math.round(seconds / SIM_DT); i++) {
@@ -93,3 +79,4 @@ export function installDebug(game: Game, mode: string, app?: App): DebugApi {
   }
   return api;
 }
+
