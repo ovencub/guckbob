@@ -348,13 +348,16 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
         c.state = 'exitSeat'; c.stateT = 0;
         const tb = g.tables[t ? t.table : 0];
         walkTo(s, c, tb.seats[c.seat].approach, true);
+        if (t?.angry) c.speed = MOVE.angrySpeed;
       }
       break;
     }
     case 'exitSeat': {
       const tbx = g.tables[t ? t.table : 0].seats[c.seat];
       c.y = SEAT_RULES.seatY * Math.max(0, Math.min(1, 1 - Math.hypot(tbx.x - c.x, tbx.z - c.z) / MOVE.hopDist)) * 0.5;
-      if (stepWalk(s, c, dt)) { c.y = 0; c.state = 'toExit'; c.stateT = 0; walkTo(s, c, g.exit); }
+      // 기분 좋게 먹은 손님은 통로로 나와 뿅 (통로를 비워 서버 길을 막지 않는다, 결정 로그)
+      if (stepWalk(s, c, dt) && t && !t.angry) { c.y = 0; poofOut(c, emit); break; }
+      if (!c.goal) { c.y = 0; c.state = 'toExit'; c.stateT = 0; walkTo(s, c, g.exit); }
       else if (c.blockedT > MOVE.stuckPoofSec) poofOut(c, emit);
       break;
     }
@@ -407,11 +410,13 @@ export function takeOrder(s: GameState, table: number, by: number, emit: Emit): 
 }
 
 /** 메뉴를 기다리는 테이블에 그릇 놓기. 반환: 놓인 좌석 (없으면 -1) */
-export function placeDish(s: GameState, t: Team, menu: MenuId, taste: number, by: number, dishId: number): number {
+export function placeDish(s: GameState, t: Team, menu: MenuId, taste: number, by: number, dishId: number, resBy = 0): number {
   const ds = s.dayState!;
-  const o = t.orders.find((x) => !x.served && x.menu === menu);
+  const open = t.orders.filter((x) => !x.served && x.menu === menu);
+  const o = (resBy ? open.find((x) => x.reserved === resBy) : undefined) ?? open.find((x) => !x.reserved) ?? open[0];
   if (!o) return -1;
   o.served = true;
+  o.reserved = 0;
   o.dish = { id: dishId, menu, taste };
   o.kind = kindnessOf(s, by);
   o.eatT = 0;

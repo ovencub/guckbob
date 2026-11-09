@@ -71,7 +71,7 @@ export interface DayState {
   t: number; overT: number; nextArrival: number; scriptedLeft: number; scriptedNext: number;
   vipAt: number; vipDone: boolean; vipScore: number;
   teams: Team[]; cats: Cat[]; queue: number[]; tables: TableState[];
-  burners: BurnerState[]; pass: Array<(Dish & { by: number; res: number }) | null>; sink: number; clean: number;
+  burners: BurnerState[]; pass: Array<(Dish & { by: number; res: number; at: number }) | null>; sink: number; clean: number;
   washCd: number; dishT: number; nextId: number;
   revenue: number; sold: number; ingredients: number; reviews: number[];
   teamsServed: number; guests: number; missed: number; angry: number; burnt: number; burnedByPlayer: number;

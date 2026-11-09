@@ -109,11 +109,19 @@ function chooseTask(s: GameState, c: Cat, cap: number): ServerTask | null {
   const ds = s.dayState!;
   // ① 들고 있는 그릇 배달
   if (c.carry.length) {
+    // 들고 있는 그릇마다 주문 하나씩 예약 (다른 서버·플레이어와 헛걸음 방지)
+    unreserve(s, c);
+    const tables: number[] = [];
     for (const d of c.carry) {
       const t = oldestWaiting(s, d.menu);
-      if (t) return { k: 'deliver', table: t.table, to: servicePoint(s, c, t.table) };
+      if (!t) continue;
+      const o = t.orders.find((x) => !x.served && x.menu === d.menu && !x.reserved);
+      if (o) { o.reserved = c.id; if (!tables.includes(t.table)) tables.push(t.table); }
     }
-    return null; // 기다리는 테이블이 없으면 들고 대기
+    if (!tables.length) return null; // 기다리는 테이블이 없으면 들고 대기
+    const g = geoOf(s.stage);
+    tables.sort((a, b) => Math.hypot(g.tables[a].x - c.x, g.tables[a].z - c.z) - Math.hypot(g.tables[b].x - c.x, g.tables[b].z - c.z));
+    return { k: 'deliver', table: tables[0], to: servicePoint(s, c, tables[0]) };
   }
   // ① 배식대 국밥 서빙
   const want: number[] = [];
@@ -161,9 +169,14 @@ function chooseTask(s: GameState, c: Cat, cap: number): ServerTask | null {
   return null;
 }
 
+function unreserve(s: GameState, c: Cat): void {
+  for (const tm of s.dayState!.teams) for (const o of tm.orders) if (o.reserved === c.id) o.reserved = 0;
+}
+
 function releaseTask(s: GameState, c: Cat): void {
   const ds = s.dayState!;
   const t = c.task;
+  unreserve(s, c);
   if (!t) return;
   if (t.k === 'pick') for (const i of t.slots) { const p = ds.pass[i]; if (p && p.res === c.id) p.res = 0; }
   if (t.k === 'order' && ds.tables[t.table].orderBy === c.id) ds.tables[t.table].orderBy = 0;
@@ -177,7 +190,7 @@ function taskValid(s: GameState, c: Cat): boolean {
   if (!t) return false;
   switch (t.k) {
     case 'pick': return t.slots.some((i) => ds.pass[i]?.res === c.id);
-    case 'deliver': { const tm = teamAt(s, t.table); return !!tm && tm.state === 'seated' && c.carry.some((d) => tm.orders.some((o) => !o.served && o.menu === d.menu)); }
+    case 'deliver': { const tm = teamAt(s, t.table); return !!tm && tm.state === 'seated' && tm.orders.some((o) => !o.served && o.reserved === c.id); }
     case 'order': { const tm = teamAt(s, t.table); return !!tm && tm.state === 'seated' && !tm.orderTaken; }
     case 'clean': return ds.tables[t.table].dirty;
     case 'home': return true;
@@ -192,11 +205,25 @@ function finishTask(s: GameState, c: Cat, m: StaffMember, emit: Emit): void {
       const p = ds.pass[i];
       if (p && p.res === c.id) { c.carry.push({ id: p.id, menu: p.menu, taste: p.taste }); ds.pass[i] = null; emit({ k: 'toPass', burner: -1, slot: i }); }
     }
+    // 걸어오는 동안 새로 나온 국밥도 쟁반이 찰 때까지 같이 집는다
+    const cap = SERVER.carry[m.grade];
+    for (let i = 0; i < ds.pass.length && c.carry.length < cap; i++) {
+      const p = ds.pass[i];
+      if (!p || p.res) continue;
+      const waiting = ds.teams.filter((tm) => tm.state === 'seated' && tm.orderTaken)
+        .reduce((a, tm) => a + tm.orders.filter((o) => !o.served && o.menu === p.menu).length, 0);
+      const carried = ds.cats.reduce((a, k) => a + k.carry.filter((d) => d.menu === p.menu).length, 0)
+        + ds.pass.filter((q) => q && q.res && q.menu === p.menu).length;
+      if (waiting - carried <= 0) continue;
+      c.carry.push({ id: p.id, menu: p.menu, taste: p.taste }); ds.pass[i] = null; emit({ k: 'toPass', burner: -1, slot: i });
+    }
   } else if (t.k === 'deliver') {
     const tm = teamAt(s, t.table);
     if (tm) {
       for (let i = 0; i < c.carry.length; i++) {
-        if (serveCarried(s, tm, c.carry[i], m.id, { x: c.x, z: c.z }, emit)) { c.carry.splice(i, 1); i--; }
+        const d = c.carry[i];
+        if (!tm.orders.some((o) => !o.served && o.menu === d.menu && o.reserved === c.id)) continue;
+        if (serveCarried(s, tm, d, m.id, { x: c.x, z: c.z }, emit, c.id)) { c.carry.splice(i, 1); i--; }
       }
     }
   } else if (t.k === 'order') {
@@ -245,13 +272,15 @@ export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void
   if (task) {
     c.task = task;
     c.state = 'walk';
+    c.stateT = 0;
     walkTo(s, c, task.to);
     return;
   }
   const g = geoOf(s.stage);
   const servers = s.dayState!.cats.filter((k) => k.kind === 'server');
   const home = g.idle[Math.max(0, servers.indexOf(c)) % g.idle.length];
-  if (Math.hypot(home.x - c.x, home.z - c.z) > 0.3 && !c.carry.length) {
+  c.stateT += dt;
+  if (Math.hypot(home.x - c.x, home.z - c.z) > 0.3 && !c.carry.length && c.stateT > MOVE.serverHomeDelaySec) {
     c.task = { k: 'home', to: home };
     c.state = 'walk';
     walkTo(s, c, home);

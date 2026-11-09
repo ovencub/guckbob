@@ -12,9 +12,9 @@ export const TIERS: readonly TierDef[] = [
   { name: '소상공인', rating: 0, revenue3: 0, mult: 1.0, needVip: false, unlocks: '' },
   { name: '동네 맛집', rating: 1.5, revenue3: 160000, mult: 1.1, needVip: false, unlocks: '베테랑 직원 · 수육 · 구글 광고' },
   { name: '줄서는 맛집', rating: 2.4, revenue3: 400000, mult: 1.25, needVip: false, unlocks: '장인 직원 · 유튜브 출연' },
-  { name: '블루리본', rating: 3.4, revenue3: 900000, mult: 1.4, needVip: false, unlocks: 'TV 출연 · 리본 간판' },
-  { name: '관광맛집', rating: 4.0, revenue3: 1600000, mult: 1.6, needVip: false, unlocks: '귀빈 방문 · 관광객 고양이' },
-  { name: '미슐랭', rating: 4.5, revenue3: 2300000, mult: 1.8, needVip: true, unlocks: '엔딩' },
+  { name: '블루리본', rating: 3.4, revenue3: 800000, mult: 1.4, needVip: false, unlocks: 'TV 출연 · 리본 간판' },
+  { name: '관광맛집', rating: 4.0, revenue3: 1250000, mult: 1.6, needVip: false, unlocks: '귀빈 방문 · 관광객 고양이' },
+  { name: '미슐랭', rating: 4.5, revenue3: 1600000, mult: 1.8, needVip: true, unlocks: '엔딩' },
 ];
 
 export const REVENUE_DAYS = 3;

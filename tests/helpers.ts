@@ -47,6 +47,6 @@ export function seatNow(s: GameState, size: number, table: number, menus?: MenuI
 export function putOnPass(s: GameState, menu: MenuId, taste = 1): number {
   const ds = s.dayState!;
   const i = ds.pass.findIndex((p) => p === null);
-  ds.pass[i] = { id: ds.nextId++, menu, taste, by: -1, res: 0 };
+  ds.pass[i] = { id: ds.nextId++, menu, taste, by: -1, res: 0, at: ds.t };
   return i;
 }

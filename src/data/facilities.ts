@@ -3,7 +3,7 @@ export const BURNERS = {
   start: 2,
   max: 6,
   // 다음 화구(3개째, 4개째, ...) 비용
-  costs: [60000, 225000, 450000, 750000],
+  costs: [60000, 120000, 200000, 300000],
 } as const;
 
 export const BOWLS = {
@@ -16,8 +16,8 @@ export const BOWLS = {
 export const SINKS = [
   { name: '소형', slots: 8, cost: 0 },
   { name: '중형', slots: 14, cost: 50000 },
-  { name: '대형', slots: 22, cost: 225000 },
-  { name: '업소용', slots: 32, cost: 525000 },
+  { name: '대형', slots: 22, cost: 100000 },
+  { name: '업소용', slots: 32, cost: 200000 },
 ] as const;
 
 export const KIOSK = { cost: 150000 } as const;

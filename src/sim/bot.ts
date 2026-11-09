@@ -2,6 +2,7 @@
 // 가장 급한 일부터: 완료 알림 > 서빙 > 주문 > 청소 > 설거지(필요할 때) > 조리 > 설거지(한가할 때)
 import { BOT } from '../data/bot';
 import * as cmd from './commands';
+import { patienceUsed } from './customers';
 import { canClean, oldestWaiting, unmetOrders } from './kitchen';
 import { PLAYER, sinkCap, unlockedMenus } from './state';
 import type { GameState, SimEvent } from './types';
@@ -24,7 +25,7 @@ export class PlayerBot {
   tick(s: GameState, dt: number, ev: SimEvent[]): boolean {
     const ds = s.dayState;
     if (!ds || (s.phase !== 'open' && s.phase !== 'overtime')) { this.seen.clear(); return false; }
-    this.budget = Math.min(1, this.budget + dt * this.tapsPerSec);
+    this.budget = Math.min(BOT.menuPickCost, this.budget + dt * this.tapsPerSec);
     const now = ds.t + ds.overT;
     this.alive.clear();
     const act = this.pick(s, now);
@@ -47,10 +48,12 @@ export class PlayerBot {
         if (this.ready(k, now)) return { key: k, cost: 1, run: (ev) => cmd.collect(s, i, ev) };
       }
     }
-    // ② 서빙
+    // ② 서빙 — 서버가 있으면 서버에게 맡기고(친절도), 급한 테이블이나 오래 남은 국밥만 직접
+    const hasServer = s.staff.some((m) => m.role === 'server');
     for (let i = 0; i < ds.pass.length; i++) {
       const p = ds.pass[i];
-      if (p && !p.res && oldestWaiting(s, p.menu)) {
+      const target = p && !p.res ? oldestWaiting(s, p.menu) : null;
+      if (p && target && (!hasServer || now - p.at >= BOT.passWaitSec || patienceUsed(s, target) >= BOT.urgentRatio)) {
         const k = `serve:${i}`;
         if (this.ready(k, now)) return { key: k, cost: 1, run: (ev) => cmd.serve(s, i, ev) };
       }

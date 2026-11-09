@@ -129,7 +129,7 @@ describe('주문·인내심 (GDD 4.2, 4.5)', () => {
     const { s, ev } = openDay();
     const t = seatNow(s, 2, 1, ['sundae', 'sundae']);
     const ds = s.dayState!;
-    ds.pass[0] = { id: 99, menu: 'sundae', taste: 1, by: -1, res: 0 };
+    ds.pass[0] = { id: 99, menu: 'sundae', taste: 1, by: -1, res: 0, at: 0 };
     cmd.serve(s, 0, ev);
     run(s, 26);
     expect(t.angry).toBe(true);

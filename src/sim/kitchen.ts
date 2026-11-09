@@ -83,7 +83,7 @@ export function collect(s: GameState, burner: number, emit: Emit, quiet = false)
     if (!quiet) { emit({ k: 'nope', what: 'burner', id: burner }); emit({ k: 'toast', msg: '배식대가 꽉 찼어요' }); }
     return false;
   }
-  ds.pass[slot] = { id: b.dishId, menu: b.menu, taste: b.taste, by: b.by, res: 0 };
+  ds.pass[slot] = { id: b.dishId, menu: b.menu, taste: b.taste, by: b.by, res: 0, at: ds.t + ds.overT };
   b.phase = 'empty';
   emit({ k: 'toPass', burner, slot });
   return true;
@@ -137,9 +137,9 @@ export function serve(s: GameState, slot: number, emit: Emit, tableId = -1, by =
 }
 
 /** 서버가 들고 온 그릇 놓기 */
-export function serveCarried(s: GameState, team: Team, d: { id: number; menu: MenuId; taste: number }, by: number, from: { x: number; z: number }, emit: Emit): boolean {
+export function serveCarried(s: GameState, team: Team, d: { id: number; menu: MenuId; taste: number }, by: number, from: { x: number; z: number }, emit: Emit, resBy = 0): boolean {
   if (team.state !== 'seated') return false;
-  const seat = placeDish(s, team, d.menu, d.taste, by, d.id);
+  const seat = placeDish(s, team, d.menu, d.taste, by, d.id, resBy);
   if (seat < 0) return false;
   emit({ k: 'serve', slot: -1, table: team.table, seat, by, menu: d.menu, from });
   return true;
