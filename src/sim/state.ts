@@ -93,7 +93,7 @@ export function newDayState(s: GameState): DayState {
     washCd: 0, dishT: 0, nextId: 1,
     revenue: 0, sold: 0, ingredients: 0, reviews: [],
     teamsServed: 0, guests: 0, missed: 0, angry: 0, burnt: 0, burnedByPlayer: 0,
-    bowlZeroSec: 0, sinkFullSec: 0, peakQueue: 0, comboN: 0, comboT: 0, ratingOpen: rating(s),
+    bowlZeroSec: 0, sinkFullSec: 0, peakQueue: 0, comboN: 0, comboT: 0, ratingOpen: rating(s), washed: 0,
   };
 }
 

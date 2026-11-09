@@ -39,11 +39,16 @@ function posOk(s: GameState, c: Cat, x: number, z: number): boolean {
   const ds = s.dayState!;
   for (const o of ds.cats) {
     if (o === c || !inHall(o)) continue;
-    const dn = (o.x - x) ** 2 + (o.z - z) ** 2;
-    if (dn < SEP2) {
-      // 이미 가까운 상태라면 멀어지는 움직임만 허용
-      const dc = (o.x - c.x) ** 2 + (o.z - c.z) ** 2;
-      if (dn <= dc) return false;
+    // 렌더러가 이전 틱과 현재 틱 사이를 보간하므로 두 위치 모두에서 떨어져 있어야 한다
+    for (let k = 0; k < 2; k++) {
+      const ox = k ? o.px : o.x;
+      const oz = k ? o.pz : o.z;
+      const dn = (ox - x) ** 2 + (oz - z) ** 2;
+      if (dn < SEP2) {
+        // 이미 가까운 상태라면 멀어지는 움직임만 허용
+        const dc = (ox - c.x) ** 2 + (oz - c.z) ** 2;
+        if (dn <= dc) return false;
+      }
     }
   }
   return true;
@@ -86,7 +91,9 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
     dx = wp.x - c.x; dz = wp.z - c.z; dist = Math.hypot(dx, dz);
   }
   if (dist < MOVE.arriveEps && c.path.length <= 1) {
-    c.x = c.goal.x; c.z = c.goal.z; c.path = []; c.goal = null; c.blockedT = 0;
+    // 마지막 몇 cm 도 다른 고양이와 간격을 지킬 때만 딱 맞춘다
+    if (posOk(s, c, c.goal.x, c.goal.z)) { c.x = c.goal.x; c.z = c.goal.z; }
+    c.path = []; c.goal = null; c.blockedT = 0;
     return true;
   }
   const step = Math.min(dist, c.speed * dt);
@@ -158,6 +165,12 @@ export function spotClear(s: GameState, x: number, z: number, except?: Cat): boo
   for (const o of s.dayState!.cats) {
     if (o === except || !inHall(o)) continue;
     if ((o.x - x) ** 2 + (o.z - z) ** 2 < SEP2) return false;
+    if ((o.px - x) ** 2 + (o.pz - z) ** 2 < SEP2) return false;
   }
   return true;
+}
+
+/** 순간이동·등장: 보간하지 않게 이전 위치도 같이 옮긴다 */
+export function place(c: Cat, x: number, z: number): void {
+  c.x = x; c.z = z; c.px = x; c.pz = z;
 }

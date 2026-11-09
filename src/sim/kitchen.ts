@@ -177,6 +177,7 @@ export function wash(s: GameState, emit: Emit, by = PLAYER): boolean {
   if (by === PLAYER && ds.washCd > 0) return false;
   ds.sink--;
   ds.clean++;
+  ds.washed++;
   if (by === PLAYER) ds.washCd = KITCHEN.washCooldownSec;
   emit({ k: 'wash', by });
   return true;

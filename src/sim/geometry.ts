@@ -94,7 +94,7 @@ export function computeLayout(stage: number): LayoutGeo {
         const sx = t.x + cx;
         const sz = t.z + side * fz;
         box(sx - R.stoolR, sx + R.stoolR, 0, R.stoolH, sz - R.stoolR, sz + R.stoolR, 'stool');
-        feet.push({ t: 'circle', x: sx, z: sz, r: R.stoolR, clear: CAT_DIM.walkClear });
+        feet.push({ t: 'circle', x: sx, z: sz, r: R.stoolR * Math.SQRT2, clear: CAT_DIM.walkClear }); // 검사기는 의자를 AABB 로 본다 → 외접원
         seats.push({
           x: sx, z: sz, ry: side < 0 ? 0 : Math.PI,
           bowl: { x: sx, z: t.z + side * (kd.d / 2 - R.bowlInset) },

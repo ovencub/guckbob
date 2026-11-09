@@ -5,7 +5,7 @@ import { SERVER } from '../data/staff';
 import { takeOrder } from './customers';
 import { chefStations, type Vec2 } from './geometry';
 import { canClean, chefSpeed, clean, oldestWaiting, serveCarried, startCook, unmetOrders, wash } from './kitchen';
-import { stepWalk, walkTo, faceToward, spotClear } from './movement';
+import { faceToward, place, spotClear, stepWalk, walkTo } from './movement';
 import { blankCat, chefTaste, geoOf, sinkCap, washSecOf } from './state';
 import type { Cat, GameState, ServerTask, SimEvent, StaffMember, Team } from './types';
 
@@ -218,7 +218,7 @@ export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void
     } else if (c.blockedT > MOVE.stuckPoofSec * 2 && c.goal && spotClear(s, c.goal.x, c.goal.z, c)) {
       // 오래 끼면 연기와 함께 목표 지점으로 (결정 로그)
       emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
-      c.x = c.goal.x; c.z = c.goal.z; c.goal = null; c.path = []; c.blockedT = 0;
+      place(c, c.goal.x, c.goal.z); c.goal = null; c.path = []; c.blockedT = 0;
       emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
     }
     return;

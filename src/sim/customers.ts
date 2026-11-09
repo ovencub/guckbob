@@ -4,7 +4,7 @@ import { MOVE, SEAT_RULES } from '../data/layouts';
 import { MENUS, type MenuId } from '../data/menus';
 import { TIER_TOURIST } from '../data/tiers';
 import { endCombo } from './combo';
-import { faceToward, spotClear, stepStraight, stepWalk, walkTo } from './movement';
+import { faceToward, place, spotClear, stepStraight, stepWalk, walkTo } from './movement';
 import { pushReview, sampleReview } from './review';
 import { rand, randInt, randRange, weighted } from './rng';
 import { arrivalRate, blankCat, geoOf, kindnessOf, maxTableCap, priceOf, queuePatience } from './state';
@@ -315,7 +315,7 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
       const idx = t.members.indexOf(c.id);
       const prevWaiting = t.members.slice(0, idx).some((id) => ds.cats.find((k) => k.id === id)?.state === 'spawnWait');
       if (prevWaiting || !spotClear(s, g.spawn.x, g.spawn.z, c)) return;
-      c.x = g.spawn.x; c.z = g.spawn.z; c.state = 'toSeat'; c.stateT = 0;
+      place(c, g.spawn.x, g.spawn.z); c.state = 'toSeat'; c.stateT = 0;
       t.spawnLeft--;
       emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
       walkTo(s, c, g.tables[t.table].seats[c.seat].approach);
@@ -327,6 +327,9 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
       break;
     }
     case 'enterSeat': {
+      const st = g.tables[t!.table].seats[c.seat];
+      // 의자 바로 앞에서 폴짝 올라간다 (위아래로만)
+      c.y = SEAT_RULES.seatY * Math.max(0, Math.min(1, 1 - Math.hypot(st.x - c.x, st.z - c.z) / MOVE.hopDist)) * 0.5;
       if (stepWalk(s, c, dt)) { c.state = 'sitting'; c.stateT = 0; }
       else if (c.blockedT > MOVE.stuckPoofSec) teleportToSeat(s, c, emit);
       break;
@@ -334,21 +337,23 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
     case 'sitting': {
       const st = g.tables[t!.table].seats[c.seat];
       faceToward(c, c.x + Math.sin(st.ry), c.z + Math.cos(st.ry), dt);
-      c.y = SEAT_RULES.seatY * Math.min(1, c.stateT / MOVE.sitSec);
+      c.y = SEAT_RULES.seatY * (0.5 + 0.5 * Math.min(1, c.stateT / MOVE.sitSec));
       if (c.stateT >= MOVE.sitSec) { c.y = SEAT_RULES.seatY; c.ry = st.ry; c.state = 'seated'; c.stateT = 0; checkSeated(s, t!, emit); }
       break;
     }
     case 'standing': {
-      c.y = SEAT_RULES.seatY * Math.max(0, 1 - c.stateT / MOVE.standSec);
+      c.y = SEAT_RULES.seatY * (1 - 0.5 * Math.min(1, c.stateT / MOVE.standSec));
       if (c.stateT >= MOVE.standSec) {
-        c.y = 0; c.state = 'exitSeat'; c.stateT = 0;
+        c.state = 'exitSeat'; c.stateT = 0;
         const tb = g.tables[t ? t.table : 0];
         walkTo(s, c, tb.seats[c.seat].approach, true);
       }
       break;
     }
     case 'exitSeat': {
-      if (stepWalk(s, c, dt)) { c.state = 'toExit'; c.stateT = 0; walkTo(s, c, g.exit); }
+      const tbx = g.tables[t ? t.table : 0].seats[c.seat];
+      c.y = SEAT_RULES.seatY * Math.max(0, Math.min(1, 1 - Math.hypot(tbx.x - c.x, tbx.z - c.z) / MOVE.hopDist)) * 0.5;
+      if (stepWalk(s, c, dt)) { c.y = 0; c.state = 'toExit'; c.stateT = 0; walkTo(s, c, g.exit); }
       else if (c.blockedT > MOVE.stuckPoofSec) poofOut(c, emit);
       break;
     }
@@ -373,7 +378,7 @@ function teleportToSeat(s: GameState, c: Cat, emit: Emit): void {
   const st = geoOf(s.stage).tables[t.table].seats[c.seat];
   if (!spotClear(s, st.x, st.z, c)) return;
   emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
-  c.x = st.x; c.z = st.z; c.path = []; c.goal = null; c.state = 'sitting'; c.stateT = 0; c.blockedT = 0;
+  place(c, st.x, st.z); c.path = []; c.goal = null; c.state = 'sitting'; c.stateT = 0; c.blockedT = 0;
   emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
 }
 

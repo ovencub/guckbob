@@ -134,6 +134,7 @@ export const MOVE = {
   sitSec: 0.2,
   standSec: 0.2,
   turnSec: 0.1,
+  hopDist: 0.5,        // 의자에서 이 거리 안이면 폴짝 올라탄다
   stuckReplanSec: 0.5,
   stuckPoofSec: 1.6,   // 끼어서 못 움직이면 손님은 연기와 함께 자리/출구로 (결정 로그)
   arriveEps: 0.04,
