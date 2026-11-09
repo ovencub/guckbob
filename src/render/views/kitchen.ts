@@ -102,6 +102,8 @@ export class KitchenView {
     this.objs = []; this.burners = []; this.rings = []; this.pass = []; this.stack = []; this.pile = [];
   }
 
+  burnerObj(i: number): THREE.Object3D | null { return this.burners[i]?.ghost ? null : this.burners[i]?.g ?? null; }
+
   burnerPos(i: number, out: THREE.Vector3): THREE.Vector3 { const b = this.g!.burners[i]; return out.set(b.x, K.burnerY + 0.1, b.z); }
   passPos(i: number, out: THREE.Vector3): THREE.Vector3 { const p = this.g!.passSlots[i]; return out.set(p.x, K.passTopY, p.z); }
   sinkPos(out: THREE.Vector3): THREE.Vector3 { return out.set(this.g!.sink.x, 1.0, this.g!.sink.z); }

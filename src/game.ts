@@ -164,6 +164,7 @@ export class Game {
     if (this.menu.open) { this.menu.hide(); if (!p || p.kind !== 'burner') return; }
     if (!p || this.paused) return;
     const s = this.s;
+    this.world.bounce(p.kind, p.id);
     let ok: boolean | 'menu' = false;
     switch (p.kind) {
       case 'table': ok = cmd.tapTable(s, p.id, ev); break;

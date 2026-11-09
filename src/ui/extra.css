@@ -1,0 +1,26 @@
+/* 튜토리얼·엔딩·결과 */
+.tut { position: absolute; inset: 0; z-index: 28; pointer-events: none; }
+.tut-hand { position: absolute; left: 0; top: 0; font-size: 40px; filter: drop-shadow(0 3px 0 rgba(43,42,51,.5)); }
+.tut-bub { position: absolute; left: 50%; top: 0; max-width: 86%; background: #FFFDF8; border: 2.5px solid var(--ink); border-radius: 14px; padding: 8px 14px;
+  font-size: 16px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
+.tut-skip { position: absolute; right: calc(12px + var(--sar)); top: calc(118px + var(--sat)); pointer-events: auto; font-size: 14px; min-height: 44px; }
+.ending { background: rgba(255, 214, 90, .55); flex-direction: column; overflow: hidden; }
+.end-box { text-align: center; animation: pop .5s ease-out; }
+.end-stars { font-size: 84px; color: #FFC93C; -webkit-text-stroke: 8px var(--ink); paint-order: stroke fill; }
+.end-title { font-size: 54px; color: #FFFDF8; -webkit-text-stroke: 10px var(--ink); paint-order: stroke fill; }
+.result { align-items: flex-start; overflow-y: auto; }
+.rpaper { margin: 4% 0; text-align: center; }
+.r-shop { font-size: 18px; color: #E2533B; }
+.r-big { font-size: 38px; color: #FFD34D; -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; line-height: 1.15; margin: 4px 0; }
+.r-title { display: inline-block; background: var(--ink); color: #FFF6E0; border-radius: 999px; padding: 4px 16px; font-size: 18px; }
+.r-time { font-size: 15px; margin-top: 6px; }
+.vs { margin-top: 6px; font-size: 15px; } .vs b { color: var(--red); font-weight: 400; }
+.r-sub { font-size: 13px; color: #7B7468; margin: 10px 0 4px; text-align: left; }
+.tls { display: flex; flex-direction: column; gap: 3px; }
+.tl { display: grid; grid-template-columns: 78px 1fr 40px; align-items: center; gap: 6px; font-size: 12px; text-align: left; }
+.tl i { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, #FFB547, #FF7B54); border: 2px solid var(--ink); }
+.tl b { font-weight: 400; text-align: right; }
+.faces { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.face { display: flex; flex-direction: column; align-items: center; font-size: 11px; }
+.face canvas { width: 54px; height: 63px; }
+.btns.col { flex-direction: column; }

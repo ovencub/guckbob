@@ -26,6 +26,9 @@ export class App {
   muted: boolean;
   private lastFrame = 0;
   private hiddenSince = 0;
+  frameHook: ((dt: number) => void) | null = null;
+  private started = false;
+  onMute: (m: boolean) => void = () => {};
 
   constructor(private canvas: HTMLCanvasElement, readonly ui: HTMLElement, readonly plugins: AppPlugins = {}) {
     this.muted = loadPrefs().muted;
@@ -54,21 +57,24 @@ export class App {
   get s(): GameState { return this.game.s; }
   get live(): boolean { return ['countdown', 'open', 'overtime'].includes(this.s.phase); }
 
-  toggleMute(): void { this.muted = !this.muted; savePrefs({ muted: this.muted }); this.game.updateHud(); }
+  toggleMute(): void { this.muted = !this.muted; savePrefs({ muted: this.muted }); this.onMute(this.muted); this.game.updateHud(); }
 
-  showStart(): void {
+  showStart(force = false): void {
+    if (this.started && !force) return;
+    this.started = false;
     const saved = load();
     this.game.hud.show(false);
     showStart(this.ui, {
       saveDay: saved && saved.phase === 'prep' ? saved.day : null,
       challenge: this.plugins.challenge ?? null,
-      onContinue: () => { if (saved) { this.game.hud.show(true); this.game.setState(saved); this.enterPrep(); } },
+      onContinue: () => { if (saved) { this.started = true; this.game.hud.show(true); this.game.setState(saved); this.enterPrep(); } },
       onNew: (name) => this.newGame(name),
     });
   }
 
   newGame(name: string, seed = Math.floor(Math.random() * 1e9), setup?: (s: GameState) => void): void {
     clearSave();
+    this.started = true;
     this.game.hud.show(true);
     const s = newGame(seed, name);
     setup?.(s);
@@ -113,7 +119,7 @@ export class App {
       if (this.s.phase === 'ended') { this.plugins.ending?.(this); return; }
       this.enterPrep();
     };
-    if (r.tierAfter > r.tierBefore) {
+    if (r.tierAfter > r.tierBefore && this.s.phase !== 'ended') {
       this.game.world.sync(this.s);
       this.plugins.onPhase?.(this, 'tierup');
       showTierUp(this.ui, r.tierAfter, go);
@@ -135,6 +141,7 @@ export class App {
     const counting = !document.hidden && !this.game.paused && (this.live || this.settle.visible || this.prep.visible);
     if (counting) this.s.playSec += dt;
     this.game.frame(t);
+    this.frameHook?.(dt);
     void this.hiddenSince;
     void this.canvas;
     requestAnimationFrame((n) => this.loop(n));

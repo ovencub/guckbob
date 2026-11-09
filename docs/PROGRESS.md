@@ -102,3 +102,8 @@
 - 봇·구매 전략: `src/sim/bot.ts`(서버가 있으면 서빙은 서버에게, 급한 테이블만 직접), `src/sim/botPlan.ts`(PLAN 순서 = 진행 모델), `tools/sim.ts`.
 - 밸런스: 비용·티어 매출 기준만 조정(`docs/BALANCE_LOG.md`), GDD 7·9·10·11·11.1 표와 진행 모델 PLAN 갱신. 리포트 `docs/balance-report.md`.
 - 결과(5시드 중앙값): 0.9탭 25일 66.5분 / **1.3탭 20일 53.9분** / 2.0탭 20일 53.8분. 1일차 순익 양수, 1일차 화난 팀 0, 10일차 이후 웨이팅 줄 생김 — 모두 통과.
+
+## 7단계 — 손맛, 사운드, 튜토리얼, 엔딩·결과·공유
+**범위:** `src/audio/{sfx,bgm}.ts`, `src/ui/{tutorial,share,ending,result,cardArt}.ts`, `src/render/world.ts`(탭 눌림·흔들림·만세), `src/app.ts`·`src/main.ts`(플러그인 연결), `src/data/{audio,share}.ts`, `public/og.png`, `e2e/phase7.spec.ts`, `tests/share.test.ts`.
+- (진행 중, 사용량 한도로 중단) 작성 완료·타입 검사 통과: 효과음·BGM 합성(`src/audio`), 튜토리얼 손가락(`ui/tutorial.ts`), 엔딩 연출·결과 페이지(`ui/ending.ts`), 결과 카드·?r= 인코딩/검증·Web Share(`ui/share.ts`, `ui/cardArt.ts`), 플러그인 연결(`src/plugins.ts`), 탭 눌림·흔들림·만세, 디버그 `nearMichelin()`(배포본 숨김).
+- **남은 일 (7단계):** `e2e/phase7.spec.ts`(튜토리얼, 엔딩→결과→공유 링크→도전장 화면, 잘못된 ?r= 무시), `tests/share.test.ts`, `public/og.png`(1200×630), 스크린샷 확인. 그 뒤 8단계(모바일 품질)·9단계(배포)·10단계(최종 점검).

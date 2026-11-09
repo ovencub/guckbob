@@ -31,6 +31,8 @@ export class World {
   overlap: OverlapLog | null = null;
   private steamAcc = 0;
   private expand: { t: number; dl: number; df: number } | null = null;
+  private bounces: Array<{ o: THREE.Object3D; t: number }> = [];
+  private shakeT = 0;
   onPaid: (amount: number, pos: THREE.Vector3) => void = () => {};
   onReview: (score: number) => void = () => {};
 
@@ -62,9 +64,28 @@ export class World {
     }
   }
 
+  /** 탭 반응: 대상 스케일 0.9 → 1.05 → 1 (0.12초) */
+  bounce(kind: string, id: number): void {
+    const o = kind === 'burner' ? this.kitchen.burnerObj(id) : kind === 'table' ? this.tables.tableObj(id) : null;
+    if (o && !this.bounces.some((b) => b.o === o)) this.bounces.push({ o, t: 0 });
+  }
+
+  shake(): void { this.shakeT = TIMING.shakeSec; }
+
   update(s: GameState, alpha: number, dt: number): void {
     this.now += dt;
     this.sync(s);
+    for (const b of this.bounces) {
+      b.t += dt;
+      const k = Math.min(1, b.t / TIMING.tapBounceSec);
+      const sc = k < 0.4 ? 1 - 0.1 * (k / 0.4) : k < 0.75 ? 0.9 + 0.15 * ((k - 0.4) / 0.35) : 1.05 - 0.05 * ((k - 0.75) / 0.25);
+      b.o.scale.setScalar(sc);
+    }
+    this.bounces = this.bounces.filter((b) => { if (b.t >= TIMING.tapBounceSec) { b.o.scale.setScalar(1); return false; } return true; });
+    if (this.shakeT > 0) {
+      this.shakeT -= dt;
+      this.root.position.x = Math.sin(this.now * 70) * 0.05 * Math.max(0, this.shakeT / TIMING.shakeSec);
+    } else this.root.position.x = 0;
     const g = this.geo!;
     this.cats.update(s, alpha, this.now, dt);
     this.tables.update(s, g, this.now, this.now);

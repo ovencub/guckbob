@@ -22,6 +22,7 @@ export interface DebugApi {
   preset(name: 'full'): void;
   fast(seconds: number): void;
   drawCalls(): number;
+  nearMichelin(): void;
 }
 
 export function installDebug(game: Game, mode: string, app?: App): DebugApi {
@@ -68,6 +69,19 @@ export function installDebug(game: Game, mode: string, app?: App): DebugApi {
       }
     },
     drawCalls: () => game.r.drawCalls,
+    /** 미슐랭 직전: 관광맛집·귀빈 인정·별점 4.8·매출 충분. 다음 정산에서 미슐랭 */
+    nearMichelin() {
+      const s = game.s;
+      applyPreset(s, 'full');
+      s.vipOk = true;
+      s.tierDays = [1, 3, 6, 9, 12];
+      s.day = 17;
+      s.revenues = [3_000_000, 3_000_000, 3_000_000];
+      s.reviews = Array.from({ length: 50 }, () => 4.9);
+      s.stats = { teams: 900, guests: 2100, bowls: 1800, revenue: 21_000_000, bestDay: 2_100_000, burnt: 12, angry: 9, missed: 300 };
+      s.playSec = 47 * 60 + 12;
+      game.world.sync(s);
+    },
   };
   (window as unknown as { __guck: DebugApi }).__guck = api;
   if (mode === 'overlap') {

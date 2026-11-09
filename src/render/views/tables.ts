@@ -36,9 +36,15 @@ export class TablesView {
   build(g: LayoutGeo): void {
     this.dispose();
     for (const t of g.tables) {
-      const group = makeTable(t, this.root);
+      // 탭 눌림 연출이 테이블 중심에서 일어나도록 피벗을 테이블 중심에
+      const pivot = new THREE.Group();
+      pivot.position.set(t.x, 0, t.z);
+      this.root.add(pivot);
+      const group = pivot;
+      const inner = makeTable(t, pivot);
+      inner.position.set(-t.x, 0, -t.z);
       const bowls = t.seats.map((s) => {
-        const b = makeBowl('sundae', group, [s.bowl.x, SEAT_RULES.tableTopY + SEAT_RULES.tableTopH / 2, s.bowl.z], 1.0);
+        const b = makeBowl('sundae', inner, [s.bowl.x, SEAT_RULES.tableTopY + SEAT_RULES.tableTopH / 2, s.bowl.z], 1.0);
         b.visible = false;
         return b;
       });
@@ -71,6 +77,8 @@ export class TablesView {
     for (const q of this.queueBubs) q.sp.removeFromParent();
     this.tv = []; this.queueBubs = [];
   }
+
+  tableObj(id: number): THREE.Object3D | null { return this.tv[id]?.group ?? null; }
 
   tablePos(id: number): THREE.Vector3 { return this.tv[id]?.hit.position ?? new THREE.Vector3(); }
   bowlPos(g: LayoutGeo, table: number, seat: number, out: THREE.Vector3): THREE.Vector3 {

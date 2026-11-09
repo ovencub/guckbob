@@ -46,6 +46,7 @@ interface CatView {
 export class CatsView {
   private views = new Map<number, CatView>();
   private frame = 0;
+  cheer = false;
   constructor(private root: THREE.Object3D) {}
 
   private create(s: GameState, c: Cat): CatView {
@@ -159,6 +160,15 @@ export class CatsView {
         b.visible = !!d;
         if (d) setBowl(b, d.menu);
       });
+    }
+    if (this.cheer) {
+      // 만세: 두 앞발을 머리 옆으로 (몸 폭 안) + 통통
+      m.pawL.position.set(-0.3, 0.8 + Math.sin(t * 10 + m.ph) * 0.05, 0.1);
+      m.pawR.position.set(0.3, 0.8 + Math.sin(t * 10 + m.ph + 1) * 0.05, 0.1);
+      m.bodyPivot.position.y = 0.02 + Math.abs(Math.sin(t * 7 + m.ph)) * 0.08;
+      m.bodyPivot.rotation.x = 0;
+      label = Math.sin(t * 3 + m.ph) > 0.4 ? 'heart' : null;
+      v.moodT = (t * 0.5) % 1;
     }
     v.moodT += dt;
     if (v.flashT > 0) { v.flashT -= dt; m.flash(v.flashT > 0); }
