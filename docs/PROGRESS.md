@@ -1,8 +1,8 @@
 # 진행 기록 (PROGRESS)
 
 ## 현재 상태
-- 마지막 완료 단계: 3
-- 다음 단계: 4
+- 마지막 완료 단계: 4
+- 다음 단계: 5
 
 ## 0단계 — 환경 점검
 **범위:** `.gitignore`, `docs/PROGRESS.md`, git 저장소 초기화. 코드 파일 없음.
@@ -60,3 +60,9 @@
 - 디버그: `?debug=1|overlap` → `window.__guck` (봇, 겹침 보고, 빠른 진행, 프리셋).
 - 봇 `src/sim/bot.ts`(탭 속도 제한·반응 0.4초·우선순위) — 6단계에서 그대로 쓴다.
 - e2e `phase3.spec.ts` 통과: 실제 테이블 탭 → 봇 2.0탭/초로 하루 → 판매·수금·설거지 확인, 겹침 0건. 스크린샷 `03-busy.png`, `03-done-alert.png`, `03-angry.png`.
+
+## 4단계 — 경제, 정산, 정비 시간, 저장
+**범위:** `src/save/storage.ts`, `src/ui/{settlement,tier,start}.ts`, `src/ui/prep/{sheet,staff,offers,recommend}.ts`, `src/app.ts`, `src/main.ts`, `src/ui/styles.css`(+`prep.css`), `e2e/phase4.spec.ts`, `tests/save.test.ts`. sim 은 catalog/economy 의 기존 함수 사용.
+- 구현: 정산 영수증(내려오기·줄당 0.15초·탭하면 전부·3초 이내, 통계, 별점 ▲▼, 티어 진행, 확인/자랑하기), 정비 시트(탭 5개·탭별 추천·잠금 이유·직원 고용/등급 변경/해고·가게 이름 변경·티어 진행 막대 2개와 남은 조건), 티어 업 축하(2초·탭 스킵·색종이), 가게 확장(벽·입구 0.6초 밀림 + 카메라 재맞춤 + 드래그/핀치), 저장 `guckbob.save.v1`(버전·마이그레이션 자리, 정산 직후·구매마다), 시작 화면(이어하기/새로 시작·가게 이름), 1일차는 정비 없이 바로 영업.
+- e2e `phase4.spec.ts` 통과(1일→정산→화구 구매→새로고침→이어하기→화구 3개, 확장 연출). 스크린샷 `04-start/settlement/prep/expand-mid/stage4.png`.
+- 메모: 4단계 가게(9×18칸)는 44px/칸 최소 배율 때문에 화면에 다 안 들어가 위아래·좌우 드래그로 본다(주방이 먼저 보이게 맞춤).

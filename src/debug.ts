@@ -1,6 +1,7 @@
 // 디버그 도구 (?debug=1 또는 ?debug=overlap). window.__guck 로 e2e 가 조작한다.
 import { SIM_DT } from './data/balance';
 import { CHEF } from './data/staff';
+import type { App } from './app';
 import type { Game } from './game';
 import { OverlapLog } from './render/overlap';
 import { PlayerBot } from './sim/bot';
@@ -11,6 +12,8 @@ import type { GameState, SimEvent } from './sim/types';
 
 export interface DebugApi {
   game: Game;
+  app?: App;
+  start(seed: number, tutorial?: boolean): void;
   state(): GameState;
   cmd: typeof cmd;
   bot(on: boolean, taps?: number): void;
@@ -22,16 +25,23 @@ export interface DebugApi {
   drawCalls(): number;
 }
 
-export function installDebug(game: Game, mode: string): DebugApi {
+export function installDebug(game: Game, mode: string, app?: App): DebugApi {
   let bot: PlayerBot | null = null;
   const botEv: SimEvent[] = [];
   const api: DebugApi = {
     game,
+    app,
+    start(seed, tutorial = false) {
+      document.querySelectorAll('.overlay.start').forEach((n) => n.remove());
+      app!.newGame('고양이 국밥', seed);
+      game.s.tutorial = tutorial;
+      if (!tutorial && game.s.dayState) game.s.dayState.scriptedLeft = 0;
+    },
     state: () => game.s,
     cmd,
     bot(on, taps = 2.0) {
       bot = on ? new PlayerBot(taps) : null;
-      game.botTick = bot ? (dt: number) => { bot!.tick(game.s, dt, botEv); game.feed(botEv); } : null;
+      api.game.botTick = bot ? (dt: number) => { bot!.tick(api.game.s, dt, botEv); api.game.feed(botEv); } : null;
     },
     overlapStart() { game.world.overlap = new OverlapLog(); },
     overlapReport() { return game.world.overlap ? game.world.overlap.report() : []; },

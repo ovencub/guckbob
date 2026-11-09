@@ -97,8 +97,9 @@ export class Game {
         this.flush();
         if (s.phase === 'settle') break;
       }
-      if (s.phase === 'settle') { this.acc = 0; this.hooks.onDayEnd(); }
+      if (s.phase === 'settle') this.acc = 0;
     }
+    if (s.phase === 'settle') this.hooks.onDayEnd();
     const alpha = live ? Math.min(1, this.acc / SIM_DT) : 1;
     this.world.update(s, alpha, this.paused ? 0 : dt);
     if (this.moneyT < 1) {

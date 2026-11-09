@@ -18,6 +18,7 @@ test('3단계: 탭으로 하루 진행 — 판매·수금·설거지, 겹침 0',
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('./?debug=overlap&seed=7');
   await page.waitForFunction(() => !!(window as unknown as G).__guck);
+  await page.evaluate(() => (window as unknown as { __guck: { start(seed: number): void } }).__guck.start(7));
   // 실제 화면 탭: 첫 손님이 앉으면 테이블을 눌러 주문을 받는다
   await waitFor(page, `(() => { const d = window.__guck.state().dayState; return d && d.teams.some(t => t.state === 'seated'); })()`);
   const ok = await page.evaluate(() => {
