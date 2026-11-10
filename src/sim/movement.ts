@@ -37,7 +37,7 @@ export function nearestOther(s: GameState, c: Cat, x: number, z: number): number
 let lastBlocker = -1;
 
 function posOk(s: GameState, c: Cat, x: number, z: number): boolean {
-  if (!c.free && !staticFree(geoOf(s.stage), x, z)) return false;
+  if (!c.free && !staticFree(geoOf(s.stage), x, z, undefined, c.kind === 'guest')) return false;
   const ds = s.dayState!;
   for (const o of ds.cats) {
     if (o === c || !inHall(o)) continue;
@@ -127,8 +127,9 @@ export function walkTo(s: GameState, c: Cat, goal: Vec2, free = false, blockers:
   c.blockedT = 0;
   c.bestD = Infinity;
   if (free) { c.path = [c.goal]; return true; }
-  let p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, blockers);
-  if (!p && blockers.length) p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, []);
+  const G = gridOf(s.stage, c.kind === 'guest');
+  let p = findPath(G, { x: c.x, z: c.z }, goal, blockers);
+  if (!p && blockers.length) p = findPath(G, { x: c.x, z: c.z }, goal, []);
   if (!p) { c.path = [c.goal]; return false; }
   c.path = p;
   return true;
@@ -223,8 +224,8 @@ export function asideSpot(s: GameState, c: Cat, other: Cat): Vec2 | null {
     for (let k = 0; k < 16; k++) {
       const a = (k / 16) * Math.PI * 2;
       const p = { x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r };
-      if (!staticFree(g, p.x, p.z) || !spotClear(s, p.x, p.z, c)) continue;
-      if (!lineOk(gridOf(s.stage), { x: c.x, z: c.z }, p, [])) continue;
+      if (!staticFree(g, p.x, p.z, undefined, c.kind === 'guest') || !spotClear(s, p.x, p.z, c)) continue;
+      if (!lineOk(gridOf(s.stage, c.kind === 'guest'), { x: c.x, z: c.z }, p, [])) continue;
       const score = Math.min(Math.hypot(p.x - other.x, p.z - other.z), segDist(p, other, ahead));
       if (score > bestScore) { bestScore = score; best = p; }
     }

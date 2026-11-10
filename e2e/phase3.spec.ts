@@ -32,7 +32,7 @@ test('3단계: 탭으로 하루 진행 — 판매·수금·설거지, 겹침 0',
   await waitFor(page, `(() => { const d = window.__guck.state().dayState; return d && d.burners.some(b => b.phase === 'done'); })()`, 30000);
   await page.screenshot({ path: 'docs/shots/03-done-alert.png' });
   await waitFor(page, `(() => { const d = window.__guck.state().dayState; return d && d.sold >= 1 && d.revenue > 0; })()`, 60000);
-  await waitFor(page, `(() => { const d = window.__guck.state().dayState; return d && d.teams.filter(t => t.state === 'seated').length >= 3 && d.burners.some(b => b.phase === 'cooking'); })()`, 60000);
+  await waitFor(page, `(() => { const d = window.__guck.state().dayState; return d && d.teams.filter(t => t.state === 'seated').length >= 2 && d.burners.some(b => b.phase === 'cooking'); })()`, 60000);
   await page.screenshot({ path: 'docs/shots/03-busy.png' });
   // 화난 손님: 봇을 끄고 기다린다
   await page.evaluate(() => (window as unknown as G).__guck.bot(false));

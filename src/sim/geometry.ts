@@ -19,6 +19,7 @@ export interface LayoutGeo {
   tables: TableGeo[]; colliders: Box[]; feet: Foot[]; stations: Vec2[];
   burners: Vec2[]; passSlots: Vec2[]; stack: Vec2; sink: Vec2; chefZ: number;
   door: Vec2; spawn: Vec2; exit: Vec2; queue: Vec2[]; idle: Vec2[]; pickZ: number;
+  serverLane: { x0: number; x1: number; z1: number };
 }
 
 export const FLOOR_RIGHT = 3.1;
@@ -37,9 +38,11 @@ export function footDist(f: Foot, x: number, z: number): number {
 }
 
 /** 걷는 고양이 중심이 (x,z)에 있을 때 정적 장애물과 안 겹치는가 */
-export function staticFree(g: LayoutGeo, x: number, z: number, ignore?: Foot): boolean {
+export function staticFree(g: LayoutGeo, x: number, z: number, ignore?: Foot, guest = false): boolean {
   if (x < g.left + CAT_DIM.tailClear || x > g.right - CAT_DIM.bodyR) return false;
   if (z < g.hallMinZ || z > g.front - CAT_DIM.frontInset) return false;
+  // 배식대 앞 서버 전용 통로: 손님은 들어가지 않는다 (서버가 서서 집는 자리)
+  if (guest && z < g.serverLane.z1 && x > g.serverLane.x0 && x < g.serverLane.x1) return false;
   for (const f of g.feet) {
     if (f === ignore) continue;
     if (footDist(f, x, z) < f.clear) return false;
@@ -116,13 +119,16 @@ export function computeLayout(stage: number): LayoutGeo {
   const qz = front + QUEUE.barrierDz + QUEUE.barrierGap;
   const queue = Array.from({ length: 6 }, (_, i) => ({ x: QUEUE.firstX - i * QUEUE.step, z: qz }));
   const pickZ = passFront + K.serverPickGap;
-  const idle = [{ x: 2.35, z: pickZ }, { x: 1.35, z: pickZ }];
+  // 서버 대기 자리: 손님이 안 들어오는 서버 전용 통로 안, 배식대를 3등분한 두 지점
+  // (양 끝은 주방 옆 4인석 앞좌석 진입점과 0.84칸뿐이라 손님 길을 막았다)
+  const idle = K.idleFrac.map((f) => ({ x: K.passX0 + (K.passX1 - K.passX0) * f, z: pickZ }));
+  const serverLane = { x0: K.passX0 - TOP_OVER - CAT_DIM.sep, x1: K.passX1 + TOP_OVER + CAT_DIM.sep, z1: pickZ + CAT_DIM.sep };
   const passSlots: Vec2[] = [];
   for (const rz of K.passRowZ) for (let c = 0; c < K.passCols; c++) passSlots.push({ x: K.passColX0 + c * K.passColStep, z: rz });
 
   const g: LayoutGeo = {
     stage, left, right, back, front, hallMinZ, tables, colliders, feet, stations: [],
-    burners, passSlots, stack, sink, chefZ, door, spawn, exit, queue, idle, pickZ,
+    burners, passSlots, stack, sink, chefZ, door, spawn, exit, queue, idle, pickZ, serverLane,
   };
   for (const t of tables) {
     for (const s of t.seats) s.approach = pickApproach(g, t, s);
@@ -146,7 +152,9 @@ function pickApproach(g: LayoutGeo, t: TableGeo, s: Seat): Vec2 {
     );
   }
   const own = g.feet[s.stool];
-  for (const c of cands) {
+  // 손님이 서버 전용 통로를 밟지 않는 진입점을 먼저 (없으면 아무 데나)
+  const ordered = [...cands.filter((c) => staticFree(g, c.x, c.z, undefined, true)), ...cands];
+  for (const c of ordered) {
     if (!staticFree(g, c.x, c.z)) continue;
     if (!segmentClear(g, c, s, own)) continue;
     if (g.tables.some((tt) => tt.seats.some((o) => o !== s && Math.hypot(o.x - c.x, o.z - c.z) < CAT_DIM.sep))) continue;

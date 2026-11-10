@@ -337,7 +337,7 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
         }
       }
       if (stepWalk(s, c, dt)) { c.state = 'enterSeat'; c.stateT = 0; const st = g.tables[t!.table].seats[c.seat]; walkTo(s, c, st, true); }
-      else if (c.blockedT > MOVE.stuckPoofSec) { ds.teleports++; teleportToSeat(s, c, emit); }
+      else if (c.blockedT > MOVE.stuckPoofSec && teleportToSeat(s, c, emit)) ds.teleports++;
       break;
     }
     case 'enterSeat': {
@@ -389,14 +389,15 @@ function poofOut(c: Cat, emit: Emit): void {
   c.state = 'gone';
 }
 
-function teleportToSeat(s: GameState, c: Cat, emit: Emit): void {
+function teleportToSeat(s: GameState, c: Cat, emit: Emit): boolean {
   const t = s.dayState!.teams.find((x) => x.id === c.team);
-  if (!t) return;
+  if (!t) return false;
   const st = geoOf(s.stage).tables[t.table].seats[c.seat];
-  if (!spotClear(s, st.x, st.z, c)) return;
+  if (!spotClear(s, st.x, st.z, c)) return false;
   emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
   place(c, st.x, st.z); c.path = []; c.goal = null; c.state = 'sitting'; c.stateT = 0; c.blockedT = 0;
   emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
+  return true;
 }
 
 function checkSeated(s: GameState, t: Team, emit: Emit): void {

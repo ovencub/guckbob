@@ -3,10 +3,10 @@ import { CAT_DIM } from '../data/layouts';
 import { staticFree, type Foot, type LayoutGeo, type Vec2 } from './geometry';
 
 export interface Grid {
-  g: LayoutGeo; x0: number; z0: number; cols: number; rows: number; cell: number; free: Uint8Array;
+  g: LayoutGeo; x0: number; z0: number; cols: number; rows: number; cell: number; free: Uint8Array; guest: boolean;
 }
 
-export function buildGrid(g: LayoutGeo): Grid {
+export function buildGrid(g: LayoutGeo, guest = false): Grid {
   const cell = CAT_DIM.gridCell;
   const x0 = g.left;
   const z0 = g.hallMinZ;
@@ -15,10 +15,10 @@ export function buildGrid(g: LayoutGeo): Grid {
   const free = new Uint8Array(cols * rows);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      free[r * cols + c] = staticFree(g, x0 + (c + 0.5) * cell, z0 + (r + 0.5) * cell) ? 1 : 0;
+      free[r * cols + c] = staticFree(g, x0 + (c + 0.5) * cell, z0 + (r + 0.5) * cell, undefined, guest) ? 1 : 0;
     }
   }
-  return { g, x0, z0, cols, rows, cell, free };
+  return { g, x0, z0, cols, rows, cell, free, guest };
 }
 
 export interface Blocker { x: number; z: number; r: number }
@@ -32,7 +32,7 @@ function blockedBy(bl: readonly Blocker[], x: number, z: number): boolean {
 }
 
 export function pointOk(G: Grid, x: number, z: number, bl: readonly Blocker[], ignore?: Foot): boolean {
-  return staticFree(G.g, x, z, ignore) && !blockedBy(bl, x, z);
+  return staticFree(G.g, x, z, ignore, G.guest) && !blockedBy(bl, x, z);
 }
 
 export function lineOk(G: Grid, a: Vec2, b: Vec2, bl: readonly Blocker[]): boolean {
@@ -41,7 +41,7 @@ export function lineOk(G: Grid, a: Vec2, b: Vec2, bl: readonly Blocker[]): boole
   for (let i = 1; i <= n; i++) {
     const x = a.x + ((b.x - a.x) * i) / n;
     const z = a.z + ((b.z - a.z) * i) / n;
-    if (!staticFree(G.g, x, z) || blockedBy(bl, x, z)) return false;
+    if (!staticFree(G.g, x, z, undefined, G.guest) || blockedBy(bl, x, z)) return false;
   }
   return true;
 }

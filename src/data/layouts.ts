@@ -24,14 +24,14 @@ export interface StageSpec {
 // 1단계는 레퍼런스(design/style-preview.html)와 같은 좌표 (2인석만 좌석 진입을 위해 0.4칸 이동, 결정 로그).
 // 확장할 때 테이블이 새 자리로 미끄러져 갈 수 있다(정비 시간이라 손님이 없다). 열 A(x≈-4.4)·B(≈-1.45)·C(≈1.3) 사이에 통로.
 const T1: TableSpec = { kind: 't2', x: -1.2, z: -1.0 };
-const T2: TableSpec = { kind: 't4', x: 1.25, z: 0.6 };
+const T2: TableSpec = { kind: 't4', x: 1.25, z: 0.9 }; // 레퍼런스 0.6 → 0.9: 배식대 앞 서버 통로와 앞좌석이 겹치지 않게 (2026-11-10)
 const T3: TableSpec = { kind: 't4', x: -1.45, z: 2.75 };
-const N1: TableSpec = { kind: 't4', x: 1.3, z: 4.45 };
+const N1: TableSpec = { kind: 't4', x: 1.3, z: 4.75 };
 
 export const STAGES: readonly StageSpec[] = [
   { cost: 0, rent: 20000, left: -2.92, front: 5.0, burnerSlots: 3, tables: [T1, T2, T3] },
   {
-    cost: 160000, rent: 35000, left: -3.92, front: 7.0, burnerSlots: 4,
+    cost: 160000, rent: 35000, left: -3.92, front: 7.3, burnerSlots: 4,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.35, z: 2.75 }],
   },
   {
@@ -42,7 +42,7 @@ export const STAGES: readonly StageSpec[] = [
     cost: 450000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
     tables: [
       T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.5 },
-      { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.25 }, { kind: 't4', x: -4.4, z: 3.25 },
+      { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.55 }, { kind: 't4', x: -4.4, z: 3.25 },
     ],
   },
 ];
@@ -72,6 +72,7 @@ export const KITCHEN_LAYOUT = {
   passColStep: 0.5,
   passRowZ: [-2.15, -2.45],
   passTopY: 0.89,
+  idleFrac: [0.67, 0.33] as readonly number[], // 서버 대기 자리 = 배식대 길이의 이 비율 지점 (진입점에서 1칸 이상)
   serverPickGap: 0.7,  // 배식대 앞면에서 서버가 서는 거리 (돌아설 때 꼬리 0.67)
 } as const;
 
@@ -134,7 +135,7 @@ export const MOVE = {
   customerSpeed: 5,    // 칸/초
   chefSpeed: 4,        // 주방장이 화구 사이를 옮겨 다니는 속도 (칸/초, 화구 간격 1칸 = 0.25초)
   angrySpeed: 5,       // 화나서 나가는 걸음 (빠른 걸음 7은 의자 옆에서 꼬리가 쓸려 5로, PROGRESS 10단계)
-  serverHomeDelaySec: 1.5, // 일이 없으면 이만큼 기다렸다가 대기 자리로
+  serverHomeDelaySec: 0.2, // 일이 없으면 곧바로 대기 자리로 (통로에 서 있지 않게)
   sitSec: 0.2,
   standSec: 0.2,
   turnSec: 0.1,

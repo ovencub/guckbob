@@ -253,8 +253,20 @@ function tryDodge(s: GameState, c: Cat): boolean {
   const ds = s.dayState!;
   const stuck = ds.cats.find((o) => o.kind === 'guest' && o.blockedBy === c.id && o.blockedT >= MOVE.yieldAfterSec)
     ?? (c.blockedBy >= 0 && c.blockedT >= MOVE.yieldAfterSec ? ds.cats.find((o) => o.id === c.blockedBy && o.kind === 'guest') : undefined);
-  if (!stuck) return false;
-  const p = asideSpot(s, c, stuck);
+  // 서버끼리: 서 있는(일이 없거나 돌아가던) 서버가 비켜 주고, 둘 다 가던 중이면 나중에 들어온 서버가 비킨다
+  const lazy = !c.task || c.task.k === 'home';
+  const blockedSrv = !stuck
+    ? ds.cats.find((o) => o !== c && o.kind === 'server' && o.blockedBy === c.id && o.blockedT >= MOVE.yieldAfterSec && (lazy || c.id > o.id || !c.moving))
+    : undefined;
+  const who = stuck ?? blockedSrv;
+  if (!who) return false;
+  let p = asideSpot(s, c, who);
+  if (!p && lazy) {
+    // 비켜 설 자리가 없으면(좁은 통로) 상대에게서 먼 대기 자리로 간다
+    const g = geoOf(s.stage);
+    const far = [...g.idle].sort((a, b) => Math.hypot(b.x - who.x, b.z - who.z) - Math.hypot(a.x - who.x, a.z - who.z))[0];
+    if (far && Math.hypot(far.x - c.x, far.z - c.z) > MOVE.arriveEps * 4) p = far;
+  }
   if (!p) return false;
   walkTo(s, c, p);
   c.dodgeT = MOVE.dodgeMaxSec;

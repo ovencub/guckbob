@@ -41,6 +41,7 @@ export interface LayoutIssue { stage: number; msg: string }
 export function checkLayout(stage: number): LayoutIssue[] {
   const g = computeLayout(stage);
   const G = buildGrid(g);
+  const GG = buildGrid(g, true); // 손님용 (서버 전용 통로 막힘)
   const issues: LayoutIssue[] = [];
   const bad = (msg: string) => issues.push({ stage, msg });
   const stoolBoxes = g.colliders.filter((b) => b.kind === 'stool');
@@ -63,10 +64,11 @@ export function checkLayout(stage: number): LayoutIssue[] {
       const ap = s.approach;
       const bl = seatBlockers(t.id, i);
       if (!staticFree(g, ap.x, ap.z)) { bad(`T${t.id} 좌석${i} 진입점 막힘 (${ap.x.toFixed(2)},${ap.z.toFixed(2)})`); return; }
+      if (!staticFree(g, ap.x, ap.z, undefined, true)) { bad(`T${t.id} 좌석${i} 진입점이 서버 전용 통로 안 (${ap.x.toFixed(2)},${ap.z.toFixed(2)})`); return; }
       if (!segmentClear(g, ap, s, g.feet[s.stool])) bad(`T${t.id} 좌석${i} 진입 직선 막힘`);
       if (bl.some((b) => Math.hypot(b.x - ap.x, b.z - ap.z) < b.r)) bad(`T${t.id} 좌석${i} 진입점이 다른 좌석과 가까움`);
-      else if (!findPath(G, g.spawn, ap, bl)) bad(`T${t.id} 좌석${i} 입구에서 길 없음`);
-      else if (!findPath(G, ap, g.exit, bl)) bad(`T${t.id} 좌석${i} 출구로 길 없음`);
+      else if (!findPath(GG, g.spawn, ap, bl)) bad(`T${t.id} 좌석${i} 입구에서 길 없음`);
+      else if (!findPath(GG, ap, g.exit, bl)) bad(`T${t.id} 좌석${i} 출구로 길 없음`);
     });
     const bl = allSeats.map((s) => ({ x: s.x, z: s.z, r: CAT_DIM.sep }));
     const okSvc = t.service.filter((p) => staticFree(g, p.x, p.z) && !bl.some((b) => Math.hypot(b.x - p.x, b.z - p.z) < b.r));

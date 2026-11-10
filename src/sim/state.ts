@@ -14,15 +14,17 @@ export const SAVE_VERSION = 1;
 export const PLAYER = -1; // 'by' 값: 플레이어
 
 const geoCache = new Map<number, LayoutGeo>();
-const gridCache = new Map<number, Grid>();
+const gridCache = new Map<string, Grid>();
 export function geoOf(stage: number): LayoutGeo {
   let g = geoCache.get(stage);
   if (!g) { g = computeLayout(stage); geoCache.set(stage, g); }
   return g;
 }
-export function gridOf(stage: number): Grid {
-  let g = gridCache.get(stage);
-  if (!g) { g = buildGrid(geoOf(stage)); gridCache.set(stage, g); }
+/** guest=true 면 서버 전용 통로를 막은 손님용 격자 */
+export function gridOf(stage: number, guest = false): Grid {
+  const key = `${stage}:${guest ? 1 : 0}`;
+  let g = gridCache.get(key);
+  if (!g) { g = buildGrid(geoOf(stage), guest); gridCache.set(key, g); }
   return g;
 }
 
