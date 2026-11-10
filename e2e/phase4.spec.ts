@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { BURNERS } from '../src/data/facilities';
 
 type W = { __guck: { start(seed: number): void; bot(on: boolean, t?: number): void; fast(sec: number): void; state(): { phase: string; burners: number; money: number; day: number; stage: number } } };
 
@@ -20,7 +21,7 @@ test('4단계: 1일 → 정산 → 화구 구매 → 새로고침 → 이어하�
   await page.getByRole('button', { name: '시설' }).click();
   await page.screenshot({ path: 'docs/shots/04-prep.png' });
   const before = await page.evaluate(() => (window as unknown as W).__guck.state().money);
-  expect(before).toBeGreaterThanOrEqual(60000);
+  expect(before).toBeGreaterThanOrEqual(BURNERS.costs[0]);
   await page.locator('[data-buy="burner"]').click();
   expect(await page.evaluate(() => (window as unknown as W).__guck.state().burners)).toBe(3);
   await page.reload();
@@ -29,7 +30,7 @@ test('4단계: 1일 → 정산 → 화구 구매 → 새로고침 → 이어하�
   const st = await page.evaluate(() => (window as unknown as W).__guck.state());
   expect(st.burners).toBe(3);
   expect(st.day).toBe(2);
-  expect(st.money).toBe(before - 60000);
+  expect(st.money).toBe(before - BURNERS.costs[0]);
   // 잠금 이유 표시
   await page.getByRole('button', { name: '메뉴' }).click();
   await expect(page.locator('.plist')).toContainText('동네 맛집 이상');

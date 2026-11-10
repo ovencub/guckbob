@@ -17,8 +17,8 @@ export interface MenuDef {
 
 export const MENUS: readonly MenuDef[] = [
   { id: 'sundae', name: '순대국밥', short: '순대', price: 9000, cost: 3600, cookSec: 3.0, unlockCost: 0, needTier: 0, weight: 50, minTeam: 1, maxPerTeam: 0 },
-  { id: 'spicy', name: '얼큰순대국밥', short: '얼큰', price: 10000, cost: 4000, cookSec: 3.5, unlockCost: 60000, needTier: 0, weight: 35, minTeam: 1, maxPerTeam: 0 },
-  { id: 'suyuk', name: '수육', short: '수육', price: 24000, cost: 10000, cookSec: 5.0, unlockCost: 270000, needTier: 1, weight: 15, minTeam: 2, maxPerTeam: 1 },
+  { id: 'spicy', name: '얼큰순대국밥', short: '얼큰', price: 10000, cost: 4000, cookSec: 3.5, unlockCost: 45000, needTier: 0, weight: 35, minTeam: 1, maxPerTeam: 0 },
+  { id: 'suyuk', name: '수육', short: '수육', price: 24000, cost: 10000, cookSec: 5.0, unlockCost: 200000, needTier: 1, weight: 15, minTeam: 2, maxPerTeam: 1 },
 ];
 
 export const MENU_IDS: readonly MenuId[] = MENUS.map((m) => m.id);

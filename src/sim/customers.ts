@@ -278,6 +278,7 @@ export function angryLeave(s: GameState, t: Team, emit: Emit): void {
   ds.reviews.push(REVIEW.angryScore);
   if (t.vip) ds.vipScore = REVIEW.angryScore;
   ds.angry += t.size;
+  ds.angryTeams++;
   t.angry = true;
   for (let i = 0; i < tb.seatDish.length; i++) if (tb.seatDish[i]) tb.seatDish[i] = { menu: 'dirty', eaten: true };
   if (placed > 0) { tb.dirty = true; tb.coins = 0; tb.bowls = placed; }

@@ -51,7 +51,7 @@ export function settle(s: GameState, ratingBefore: number): DayReport {
     reviewAvg, reviewCount: ds.reviews.length, ratingBefore, ratingAfter: rating(s),
     tierBefore, tierAfter: s.tier, vip: ds.vipScore < 0 ? 'none' : s.vipOk && ds.vipScore >= 0 && ds.vipScore >= 4.5 ? 'pass' : 'fail',
     bowlZeroSec: ds.bowlZeroSec, sinkFullSec: ds.sinkFullSec, peakQueue: ds.peakQueue, burnedByPlayer: ds.burnedByPlayer,
-    angryTeams: ds.teams.filter((t) => t.angry).length,
+    angryTeams: ds.angryTeams,
   };
   // 홍보: 오늘 쓴 것 1일 차감, 어제 정비 때 산 것은 이미 오늘부터 적용됨
   s.promos = s.promos.map((p) => ({ ...p, days: p.days - 1 })).filter((p) => p.days > 0);

@@ -31,15 +31,15 @@ const N1: TableSpec = { kind: 't4', x: 1.3, z: 4.75 };
 export const STAGES: readonly StageSpec[] = [
   { cost: 0, rent: 20000, left: -2.92, front: 5.0, burnerSlots: 3, tables: [T1, T2, T3] },
   {
-    cost: 160000, rent: 35000, left: -3.92, front: 7.3, burnerSlots: 4,
+    cost: 120000, rent: 35000, left: -3.92, front: 7.3, burnerSlots: 4,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.35, z: 2.75 }],
   },
   {
-    cost: 280000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
+    cost: 210000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.9, z: 3.2 }, { kind: 't6', x: -2.5, z: 6.95 }, { kind: 't4', x: -3.75, z: -0.5 }],
   },
   {
-    cost: 450000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
+    cost: 340000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
     tables: [
       T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.5 },
       { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.55 }, { kind: 't4', x: -4.4, z: 3.25 },

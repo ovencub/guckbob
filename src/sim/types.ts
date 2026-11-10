@@ -75,7 +75,7 @@ export interface DayState {
   washCd: number; dishT: number; nextId: number;
   revenue: number; sold: number; ingredients: number; reviews: number[];
   teamsServed: number; guests: number; missed: number; angry: number; burnt: number; burnedByPlayer: number;
-  bowlZeroSec: number; sinkFullSec: number; peakQueue: number; comboN: number; comboT: number; ratingOpen: number; washed: number; teleports: number;
+  bowlZeroSec: number; sinkFullSec: number; peakQueue: number; comboN: number; comboT: number; ratingOpen: number; washed: number; teleports: number; angryTeams: number;
 }
 
 export interface Promo { id: PromoId; days: number }

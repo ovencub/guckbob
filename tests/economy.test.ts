@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buy, offers, regradeCost } from '../src/sim/catalog';
 import { CHEF, hireFee } from '../src/data/staff';
+import { PROMO_BY_ID } from '../src/data/promos';
+import { TIERS } from '../src/data/tiers';
 import { avgRevenue3, tierReady } from '../src/sim/economy';
 import { pushReview } from '../src/sim/review';
 import { finishSettle, startDay, step } from '../src/sim/sim';
@@ -35,28 +37,33 @@ describe('하루 흐름·정산 (GDD 3장, 12장)', () => {
 
   it('홍보는 다음 영업부터 적용, 홍보비는 그날 영수증에', () => {
     const s = newGame(2);
+    const cost = PROMO_BY_ID.blog.cost;
     s.money = 100000;
     s.tutorial = false;
     expect(buy(s, 'promo:blog')).toBe(true);
-    expect(s.money).toBe(50000);
+    expect(s.money).toBe(100000 - cost);
     startDay(s);
     expect(s.promos.find((p) => p.id === 'blog')?.days).toBe(2);
     const ev: SimEvent[] = [];
     while (s.phase !== 'settle') step(s, ev);
-    expect(s.lastReport!.promo).toBe(50000);
+    expect(s.lastReport!.promo).toBe(cost);
     expect(s.promos.find((p) => p.id === 'blog')?.days).toBe(1);
   });
 
   it('티어: 별점과 3일 평균 매출 둘 다', () => {
     const s = newGame(1);
-    for (let i = 0; i < 50; i++) pushReview(s.reviews, 1.6);
-    s.revenues = [150000, 170000];
-    expect(avgRevenue3(s)).toBe(160000);
+    const T = TIERS[1];
+    for (let i = 0; i < 50; i++) pushReview(s.reviews, T.rating + 0.1);
+    s.revenues = [T.revenue3 - 10000, T.revenue3 + 10000];
+    expect(avgRevenue3(s)).toBe(T.revenue3);
     expect(tierReady(s, 1)).toBe(true);
-    s.revenues = [100000, 170000, 170000, 170000];
-    expect(avgRevenue3(s)).toBe(170000);
-    for (let i = 0; i < 50; i++) pushReview(s.reviews, 1.4);
-    expect(tierReady(s, 1)).toBe(false);
+    s.revenues = [T.revenue3 - 100000, T.revenue3 + 10000, T.revenue3 + 10000, T.revenue3 + 10000];
+    expect(avgRevenue3(s)).toBe(T.revenue3 + 10000); // 최근 3일만
+    s.revenues = [T.revenue3 - 30000, T.revenue3 - 30000, T.revenue3 - 30000];
+    expect(tierReady(s, 1)).toBe(false); // 매출 모자람
+    s.revenues = [T.revenue3, T.revenue3, T.revenue3];
+    for (let i = 0; i < 50; i++) pushReview(s.reviews, T.rating - 0.1);
+    expect(tierReady(s, 1)).toBe(false); // 별점 모자람
   });
 
   it('미슐랭은 귀빈 인정이 있어야', () => {
