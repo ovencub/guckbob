@@ -12,9 +12,21 @@ export class PlayerBot {
   private seen = new Map<string, number>();
   private alive = new Set<string>();
   actions = 0;
+  /** 사람 흉내 (밸런스 검증용): 가끔 딴 데 보기(lapse), 가장 급한 일을 놓치기(miss) */
+  human: { lapseEvery: [number, number]; lapseSec: [number, number]; miss: number; seed: number } | null = null;
+  private lapseAt = -1;
+  private lapseEnd = -1;
+  private ignore = new Map<string, number>();
   constructor(public tapsPerSec: number, public reaction: number = BOT.reactionSec) {}
 
+  private rnd(): number {
+    const h = this.human!;
+    h.seed = (h.seed * 1664525 + 1013904223) >>> 0;
+    return h.seed / 4294967296;
+  }
+
   private ready(key: string, now: number): boolean {
+    if ((this.ignore.get(key) ?? -1) > now) return false;
     this.alive.add(key);
     const t = this.seen.get(key);
     if (t === undefined) { this.seen.set(key, now); return false; }
@@ -24,11 +36,22 @@ export class PlayerBot {
   /** 한 틱. 행동했으면 true */
   tick(s: GameState, dt: number, ev: SimEvent[]): boolean {
     const ds = s.dayState;
-    if (!ds || (s.phase !== 'open' && s.phase !== 'overtime')) { this.seen.clear(); return false; }
+    if (!ds || (s.phase !== 'open' && s.phase !== 'overtime')) { this.seen.clear(); this.ignore.clear(); this.lapseAt = -1; this.lapseEnd = -1; return false; }
     this.budget = Math.min(BOT.menuPickCost, this.budget + dt * this.tapsPerSec);
     const now = ds.t;
     this.alive.clear();
-    const act = this.pick(s, now);
+    if (this.human) {
+      const h = this.human;
+      if (this.lapseAt < 0) this.lapseAt = now + h.lapseEvery[0] + this.rnd() * (h.lapseEvery[1] - h.lapseEvery[0]);
+      if (now >= this.lapseAt) { this.lapseEnd = now + h.lapseSec[0] + this.rnd() * (h.lapseSec[1] - h.lapseSec[0]); this.lapseAt = this.lapseEnd + h.lapseEvery[0] + this.rnd() * (h.lapseEvery[1] - h.lapseEvery[0]); }
+      if (now < this.lapseEnd) return false;
+    }
+    let act = this.pick(s, now);
+    if (act && this.human && this.budget >= act.cost && this.rnd() < this.human.miss) {
+      // 가장 급한 일을 못 보고 다른 일을 한다 (0.5~1.5초 동안 그 일을 못 봄)
+      this.ignore.set(act.key, now + 0.5 + this.rnd());
+      act = this.pick(s, now);
+    }
     for (const k of [...this.seen.keys()]) if (!this.alive.has(k)) this.seen.delete(k);
     if (!act || this.budget < act.cost) return false;
     this.budget -= act.cost;

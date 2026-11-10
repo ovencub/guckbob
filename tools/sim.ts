@@ -17,6 +17,7 @@ const SEEDS = Number(arg('seeds', '5'));
 const TAPS = arg('tap', '1.3').split(',').map(Number);
 const REPORT = arg('report', '');
 const SEED0 = Number(arg('seed0', '1000'));
+const HUMAN = process.argv.includes('--human');
 
 export interface RunResult { seed: number; tap: number; reached: Record<string, number>; days: number; minutes: number; michelin: boolean; rows: Array<DayReport & { buys: number; minutes: number; money: number; rating: number; tier: number; bought: string[] }> }
 
@@ -27,9 +28,10 @@ function uiSeconds(r: DayReport, overtime: number): number {
   return DAY.countdownSec + overtime + receipt + TIMING.screenSec * 2 + tierUp;
 }
 
-export function runGame(seed: number, tap: number, days = DAYS): RunResult {
+export function runGame(seed: number, tap: number, days = DAYS, human = HUMAN): RunResult {
   const s = newGame(seed);
-  const bot = new PlayerBot(tap);
+  const bot = new PlayerBot(tap, human ? 0.7 : undefined);
+  if (human) bot.human = { lapseEvery: [8, 15], lapseSec: [1.5, 3], miss: 0.25, seed: seed * 7 + 1 };
   const cur: PlanCursor = { i: 0 };
   const ev: SimEvent[] = [];
   let minutes = 0;
