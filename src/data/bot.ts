@@ -13,8 +13,9 @@ export const BOT = {
 
 // 진행 모델 PLAN 과 같은 순서. id 는 정비 화면 구매 id, 'up:역할:등급' 은 등급 올리기. tier = 필요한 티어 index
 export const BOT_PLAN: ReadonlyArray<{ id: string; tier: number }> = [
-  { id: 'menu:spicy', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'hire:server:0', tier: 0 }, { id: 'hire:chef:0', tier: 0 },
-  { id: 'burner', tier: 0 }, { id: 'taste', tier: 0 }, { id: 'sink', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'kiosk', tier: 0 },
+  // 초반은 손으로: 메뉴·그릇·화구·개수대 먼저, 직원은 계약금을 모은 뒤 (2026-11-10 직원 가격 개편)
+  { id: 'menu:spicy', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'burner', tier: 0 }, { id: 'hire:server:0', tier: 0 },
+  { id: 'hire:chef:0', tier: 0 }, { id: 'taste', tier: 0 }, { id: 'sink', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'kiosk', tier: 0 },
   { id: 'stage', tier: 0 }, { id: 'up:chef:1', tier: 0 }, { id: 'up:server:1', tier: 0 }, { id: 'taste', tier: 0 }, { id: 'menu:suyuk', tier: 1 },
   { id: 'hire:dish:0', tier: 0 }, { id: 'burner', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'bowls', tier: 0 }, { id: 'cost', tier: 0 },
   { id: 'hire:chef:1', tier: 0 }, { id: 'promo:google', tier: 1 },

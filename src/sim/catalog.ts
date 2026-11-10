@@ -4,7 +4,7 @@ import { STAGES } from '../data/layouts';
 import { MENUS } from '../data/menus';
 import { PROMOS, type PromoId } from '../data/promos';
 import { COST_RESEARCH, TASTE_RESEARCH } from '../data/research';
-import { CHEF, DISH, GRADE_NAMES, GRADE_NEED_TIER, GRADES, ROLE_MAX, ROLE_NAMES, ROLE_WAGE, SERVER, STAFF_NAMES, type Grade, type StaffRole } from '../data/staff';
+import { CHEF, DISH, GRADE_NAMES, GRADE_NEED_TIER, GRADES, ROLE_MAX, ROLE_NAMES, ROLE_WAGE, SERVER, STAFF_NAMES, hireFee, type Grade, type StaffRole } from '../data/staff';
 import { TIERS } from '../data/tiers';
 import { randInt } from './rng';
 import { ratingShown } from './state';
@@ -28,7 +28,7 @@ function staffDesc(role: StaffRole, g: Grade): string {
 export function offers(s: GameState): Offer[] {
   const out: Offer[] = [];
   const add = (o: Omit<Offer, 'ok' | 'reason'> & { lock?: string }) => {
-    const lock = o.lock ?? (o.cost > s.money ? '돈이 모자라요' : '');
+    const lock = o.lock || (o.cost > s.money ? '돈이 모자라요' : '');
     out.push({ ...o, ok: !lock, reason: lock });
   };
   // 직원: 역할별 등급 고용
@@ -37,7 +37,7 @@ export function offers(s: GameState): Offer[] {
     for (const g of GRADES) {
       const tierLock = s.tier < GRADE_NEED_TIER[g] ? `${TIERS[GRADE_NEED_TIER[g]].name} 이상` : '';
       add({
-        id: `hire:${role}:${g}`, tab: 'staff', name: `${ROLE_NAMES[role]} ${GRADE_NAMES[g]}`, desc: staffDesc(role, g), cost: 0,
+        id: `hire:${role}:${g}`, tab: 'staff', name: `${ROLE_NAMES[role]} ${GRADE_NAMES[g]}`, desc: staffDesc(role, g), cost: hireFee(ROLE_WAGE[role][g]),
         wage: ROLE_WAGE[role][g], action: '고용', lock: tierLock || (have >= ROLE_MAX[role] ? `최대 ${ROLE_MAX[role]}명` : ''),
       });
     }
@@ -123,9 +123,19 @@ export function fire(s: GameState, id: number): boolean {
 }
 
 /** 등급 바꾸기 (고용비가 없어 해고 후 재고용과 같다). 이름·무늬는 유지 */
+/** 등급 바꾸기 비용: 올릴 때 계약금 차액, 내릴 때 0 */
+export function regradeCost(s: GameState, id: number, grade: Grade): number {
+  const m = s.staff.find((x) => x.id === id);
+  if (!m) return 0;
+  return Math.max(0, hireFee(ROLE_WAGE[m.role][grade]) - hireFee(ROLE_WAGE[m.role][m.grade]));
+}
+
 export function regrade(s: GameState, id: number, grade: Grade): boolean {
   const m = s.staff.find((x) => x.id === id);
   if (!m || s.tier < GRADE_NEED_TIER[grade]) return false;
+  const cost = regradeCost(s, id, grade);
+  if (cost > s.money) return false;
+  s.money -= cost;
   m.grade = grade;
   return true;
 }

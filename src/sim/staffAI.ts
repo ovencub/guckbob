@@ -3,9 +3,9 @@ import { CAT_DIM, KITCHEN_LAYOUT as K } from '../data/layouts';
 import { MOVE } from '../data/layouts';
 import { SERVER } from '../data/staff';
 import { takeOrder } from './customers';
-import { chefStations, type Vec2 } from './geometry';
+import { chefStations, staticFree, type Vec2 } from './geometry';
 import { canClean, chefSpeed, clean, oldestWaiting, serveCarried, startCook, unmetOrders, wash } from './kitchen';
-import { faceToward, place, spotClear, stepWalk, walkTo } from './movement';
+import { faceToward, place, routeBlockers, spotClear, stepWalk, walkTo } from './movement';
 import { blankCat, chefTaste, geoOf, sinkCap, washSecOf } from './state';
 import type { Cat, GameState, ServerTask, SimEvent, StaffMember, Team } from './types';
 
@@ -18,7 +18,8 @@ export function placeStaff(s: GameState): void {
   const cs = s.staff.filter((m) => m.role === 'chef');
   const st = chefStations(g, s.burners, cs.length);
   cs.forEach((m, i) => {
-    const c = blankCat(ds.nextId++, 'chef', st[i].x, g.chefZ, Math.PI);
+    const x0 = st[i].burners.length ? g.burners[st[i].burners[0]].x : st[i].x;
+    const c = blankCat(ds.nextId++, 'chef', x0, g.chefZ, Math.PI);
     c.staff = m.id; c.fur = m.fur; c.state = 'idle';
     ds.cats.push(c);
   });
@@ -37,7 +38,8 @@ export function placeStaff(s: GameState): void {
 
 const member = (s: GameState, c: Cat): StaffMember | undefined => s.staff.find((m) => m.id === c.staff);
 
-export function updateChefs(s: GameState, emit: Emit): void {
+/** 주방장: 맡은 화구(최대 2개) 중 끓일 화구 앞으로 게걸음으로 가서 조리. 조리대를 보고 옆으로만 움직인다 */
+export function updateChefs(s: GameState, dt: number, emit: Emit): void {
   const ds = s.dayState!;
   const g = geoOf(s.stage);
   const chefCats = ds.cats.filter((c) => c.kind === 'chef');
@@ -45,15 +47,27 @@ export function updateChefs(s: GameState, emit: Emit): void {
   chefCats.forEach((c, i) => {
     const m = member(s, c);
     if (!m) return;
-    c.actT = 0;
-    for (const b of st[i].burners) {
-      const bs = ds.burners[b];
-      if (bs.phase === 'cooking' && bs.by === m.id) c.actT = 1;
-      if (bs.phase !== 'empty') continue;
-      const un = unmetOrders(s);
-      if (!un.length) break;
-      if (startCook(s, b, un[0].menu, m.id, chefTaste(s, m), chefSpeed(m.grade), emit)) c.actT = 1;
+    c.ry = Math.PI;
+    c.moving = false;
+    const mine = st[i].burners;
+    const cooking = mine.some((b) => ds.burners[b].phase === 'cooking' && ds.burners[b].by === m.id);
+    // 끓일 화구 고르기: 지금 서 있는 화구가 비었으면 그곳, 아니면 가까운 빈 화구
+    const empty = mine.filter((b) => ds.burners[b].phase === 'empty').sort((a, b) => Math.abs(g.burners[a].x - c.x) - Math.abs(g.burners[b].x - c.x));
+    const want = empty.length && unmetOrders(s).length && ds.clean > 0 ? empty[0] : -1;
+    if (want >= 0) {
+      const tx = g.burners[want].x;
+      const d = tx - c.x;
+      if (Math.abs(d) > MOVE.arriveEps) {
+        const stp = Math.min(Math.abs(d), MOVE.chefSpeed * dt);
+        c.x += Math.sign(d) * stp;
+        c.moving = true;
+      } else {
+        c.x = tx;
+        const un = unmetOrders(s);
+        if (un.length) startCook(s, want, un[0].menu, m.id, chefTaste(s, m), chefSpeed(m.grade), emit);
+      }
     }
+    c.actT = cooking && !c.moving ? 1 : 0;
   });
 }
 
@@ -234,10 +248,55 @@ function finishTask(s: GameState, c: Cat, m: StaffMember, emit: Emit): void {
   releaseTask(s, c);
 }
 
+/** 나 때문에 막힌 손님이 있으면, 그 손님의 갈 길에서 먼 빈 자리로 비켜 선다 */
+function tryDodge(s: GameState, c: Cat): boolean {
+  const ds = s.dayState!;
+  const g = geoOf(s.stage);
+  const stuck = ds.cats.find((o) => o.kind === 'guest' && o.blockedBy === c.id && o.blockedT >= MOVE.yieldAfterSec);
+  if (!stuck) return false;
+  const ahead = stuck.path[0] ?? stuck.goal ?? { x: stuck.x, z: stuck.z };
+  let best: Vec2 | null = null;
+  let bestScore = -Infinity;
+  for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2;
+    const p = { x: c.x + Math.cos(a) * MOVE.dodgeDist, z: c.z + Math.sin(a) * MOVE.dodgeDist };
+    if (!staticFree(g, p.x, p.z) || !spotClear(s, p.x, p.z, c)) continue;
+    // 손님 위치·다음 지점 둘 다에서 멀수록 좋다
+    const score = Math.min(Math.hypot(p.x - stuck.x, p.z - stuck.z), segDist(p, stuck, ahead));
+    if (score > bestScore) { bestScore = score; best = p; }
+  }
+  if (!best || bestScore < CAT_DIM.sep) return false;
+  const keepGoal = c.goal;
+  walkTo(s, c, best);
+  c.dodgeT = MOVE.dodgeMaxSec;
+  void keepGoal;
+  return true;
+}
+
+function segDist(p: Vec2, a: Vec2, b: Vec2): number {
+  const dx = b.x - a.x; const dz = b.z - a.z;
+  const l2 = dx * dx + dz * dz || 1e-9;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / l2));
+  return Math.hypot(p.x - (a.x + dx * t), p.z - (a.z + dz * t));
+}
+
 export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void {
   const m = member(s, c);
   if (!m) return;
   c.speed = SERVER.speed[m.grade];
+  c.lookSec = SERVER.lookSec[m.grade];
+  c.replanSec = SERVER.replanSec[m.grade];
+  // 손님 우선: 내가 손님 길을 막고 있으면 옆으로 비켜 선다
+  if (c.dodgeT > 0) {
+    c.dodgeT -= dt;
+    if (stepWalk(s, c, dt) || c.dodgeT <= 0) {
+      c.dodgeT = 0;
+      if (c.task && c.state === 'walk') walkTo(s, c, c.task.to, false, routeBlockers(s, c, c.task.to));
+      else { c.goal = null; c.path = []; }
+    }
+    return;
+  }
+  if (c.state !== 'act' && tryDodge(s, c)) return;
   if (c.state === 'act') {
     c.actT -= dt;
     if (c.task && c.task.k !== 'home') {
@@ -273,7 +332,7 @@ export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void
     c.task = task;
     c.state = 'walk';
     c.stateT = 0;
-    walkTo(s, c, task.to);
+    walkTo(s, c, task.to, false, routeBlockers(s, c, task.to));
     return;
   }
   const g = geoOf(s.stage);

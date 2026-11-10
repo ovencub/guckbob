@@ -8,7 +8,11 @@ export function tipFor(s: GameState): string {
   const ds = s.dayState;
   if (!ds) return '다음 영업을 준비하세요.';
   if (s.phase === 'countdown') return '영업 시작! 손님이 몰려와요.';
-  if (s.phase === 'overtime') return '마감! 남은 손님만 마무리하세요.';
+  if (s.phase === 'overtime') {
+    const eating = ds.teams.some((t) => t.state === 'entering' || t.state === 'seated');
+    if (eating) return '마감! 남은 손님 식사를 마무리하세요.';
+    return '마지막 테이블을 치우고 계산하면 영업 끝!';
+  }
   const burning = ds.burners.find((b) => b.phase === 'done' && b.by < 0 && b.t > KITCHEN.burnSec * 0.4);
   if (burning) return '완료! 뜬 화구를 눌러 배식대로 옮기세요. 늦으면 국밥이 타요.';
   if (ds.burners.some((b) => b.phase === 'burnt')) return '탄 냄비는 개수대에 자리가 나야 치워져요. 개수대를 눌러 설거지!';

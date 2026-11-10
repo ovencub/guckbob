@@ -35,11 +35,11 @@ export const STAGES: readonly StageSpec[] = [
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.35, z: 2.75 }],
   },
   {
-    cost: 400000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
+    cost: 350000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.9, z: 3.2 }, { kind: 't6', x: -2.5, z: 6.95 }, { kind: 't4', x: -3.75, z: -0.5 }],
   },
   {
-    cost: 700000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
+    cost: 600000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
     tables: [
       T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.5 },
       { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.25 }, { kind: 't4', x: -4.4, z: 3.25 },
@@ -132,6 +132,7 @@ export const CAT_DIM = {
 // 이동 (GDD 15장)
 export const MOVE = {
   customerSpeed: 5,    // 칸/초
+  chefSpeed: 4,        // 주방장이 화구 사이를 옮겨 다니는 속도 (칸/초, 화구 간격 1칸 = 0.25초)
   angrySpeed: 5,       // 화나서 나가는 걸음 (빠른 걸음 7은 의자 옆에서 꼬리가 쓸려 5로, PROGRESS 10단계)
   serverHomeDelaySec: 1.5, // 일이 없으면 이만큼 기다렸다가 대기 자리로
   sitSec: 0.2,
@@ -139,6 +140,12 @@ export const MOVE = {
   turnSec: 0.1,
   hopDist: 0.5,        // 의자에서 이 거리 안이면 폴짝 올라탄다
   stuckReplanSec: 0.5,
+  blockerRange: 4,     // 경로 계산 때 장애물로 보는 고양이 범위 (칸)
+  predictStep: 0.4,    // 손님 이동 예측 점 간격 (칸)
+  predictShrink: 0.85, // 예측 지점은 조금 작게 (지나갈 수도 있는 자리)
+  yieldAfterSec: 0.2,  // 손님이 서버 때문에 이만큼 막히면 서버가 비켜 준다 (손님 우선)
+  dodgeDist: 0.95,     // 비켜서는 거리
+  dodgeMaxSec: 0.8,
   progressEps: 0.05,   // 목표까지 이만큼 가까워져야 '진행'으로 본다
   stuckPoofSec: 1.6,   // 끼어서 못 움직이면 손님은 연기와 함께 자리/출구로 (결정 로그)
   arriveEps: 0.04,

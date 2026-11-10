@@ -24,7 +24,30 @@ export class PrepSheet {
     this.el.className = 'prep';
     this.el.style.display = 'none';
     root.appendChild(this.el);
-    this.el.addEventListener('click', (e) => this.click(e));
+    this.el.addEventListener('click', (e) => { if (this.dragMoved) { e.stopPropagation(); this.dragMoved = false; return; } this.click(e); }, true);
+    this.enableMouseDragScroll();
+  }
+
+  private dragMoved = false;
+
+  /** PC: 마우스로 끌어도 목록이 스크롤된다 (터치는 브라우저 기본 스크롤) */
+  private enableMouseDragScroll(): void {
+    let startY = 0;
+    let startTop = 0;
+    let list: HTMLElement | null = null;
+    this.el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      list = (e.target as HTMLElement).closest('.plist');
+      if (!list) return;
+      startY = e.clientY; startTop = list.scrollTop; this.dragMoved = false;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!list || e.pointerType !== 'mouse' || !(e.buttons & 1)) return;
+      const dy = e.clientY - startY;
+      if (Math.abs(dy) > 6) { this.dragMoved = true; list.classList.add('dragging'); }
+      if (this.dragMoved) list.scrollTop = startTop - dy;
+    });
+    window.addEventListener('pointerup', () => { list?.classList.remove('dragging'); list = null; });
   }
 
   show(s: GameState): void {
@@ -55,6 +78,8 @@ export class PrepSheet {
 
   render(): void {
     const s = this.s!;
+    const prevTop = (this.el.querySelector('.plist') as HTMLElement | null)?.scrollTop ?? 0;
+    const prevTab = this.el.dataset.tab;
     const all = offers(s);
     const list = all.filter((o) => o.tab === this.tab);
     const rec = recommend(s, this.tab, list);
@@ -90,7 +115,10 @@ export class PrepSheet {
         ${promoNow}
       </div>
       <div class="tabs">${TABS.map(([k, n]) => `<button class="tab tap${k === this.tab ? ' on' : ''}" type="button" data-tab="${k}">${n}</button>`).join('')}</div>
-      <div class="plist">${body}</div>
+      <div class="plist" data-scroll>${body}</div>
       <button class="btn main big tap" type="button" data-next>다음 영업하기</button>`;
+    // 같은 탭에서 구매해 다시 그릴 때 스크롤 위치 유지
+    if (prevTab === this.tab) (this.el.querySelector('.plist') as HTMLElement).scrollTop = prevTop;
+    this.el.dataset.tab = this.tab;
   }
 }

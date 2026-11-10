@@ -59,7 +59,7 @@ export function step(s: GameState, events: SimEvent[], dt = SIM_DT): void {
   updateTeams(s, dt, emit);
   if (s.phase === 'open') admitFromQueue(s, emit);
   updateBurners(s, dt, emit);
-  updateChefs(s, emit);
+  updateChefs(s, dt, emit);
   updateDishwasher(s, dt, emit);
   for (const c of ds.cats) {
     if (c.kind === 'guest') updateGuest(s, c, dt, emit);
@@ -72,8 +72,10 @@ export function step(s: GameState, events: SimEvent[], dt = SIM_DT): void {
   if (ds.sink >= sinkCap(s)) ds.sinkFullSec += dt;
 
   if (s.phase === 'overtime') {
-    const busy = ds.teams.some((t) => t.state === 'entering' || t.state === 'seated');
-    if (!busy || ds.overT >= DAY.overtimeMaxSec) endDay(s, emit);
+    // 마지막 손님이 다 먹고 나가고, 테이블을 치워 계산까지 끝나야 마감 (사용자 요청 2026-11-10)
+    const guests = ds.teams.some((t) => t.state === 'entering' || t.state === 'seated' || t.state === 'leaving');
+    const dirty = ds.tables.some((tb) => tb.dirty);
+    if ((!guests && !dirty) || ds.overT >= DAY.overtimeSafetySec) endDay(s, emit);
   }
 }
 

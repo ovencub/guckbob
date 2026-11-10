@@ -16,6 +16,7 @@ const DAYS = Number(arg('days', '40'));
 const SEEDS = Number(arg('seeds', '5'));
 const TAPS = arg('tap', '1.3').split(',').map(Number);
 const REPORT = arg('report', '');
+const SEED0 = Number(arg('seed0', '1000'));
 
 export interface RunResult { seed: number; tap: number; reached: Record<string, number>; days: number; minutes: number; michelin: boolean; rows: Array<DayReport & { buys: number; minutes: number; money: number; rating: number; tier: number; bought: string[] }> }
 
@@ -67,7 +68,7 @@ function main(): void {
     const rs: RunResult[] = [];
     for (let k = 0; k < SEEDS; k++) {
       const t0 = Date.now();
-      const r = runGame(1000 + k, tap);
+      const r = runGame(SEED0 + k, tap);
       rs.push(r); all.push(r);
       console.log(`tap ${tap} seed ${r.seed}: ${r.michelin ? `미슐랭 ${r.days}일` : `미달(${r.days}일)`} ${r.minutes.toFixed(1)}분 tiers ${JSON.stringify(r.reached)} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     }

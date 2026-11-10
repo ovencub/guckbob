@@ -6,7 +6,7 @@ export const DAY = {
   openSec: 120,          // 영업 시간 (게임 시계 11:00 → 21:00)
   clockStartMin: 11 * 60,
   clockEndMin: 21 * 60,
-  overtimeMaxSec: 15,    // 마감 후 남은 손님 처리 최대
+  overtimeSafetySec: 90, // 마감 후: 남은 손님이 다 먹고 나가고 테이블을 치워 계산해야 정산. 그래도 안 끝나면 이 시간 뒤 자동 정리(안전장치)
   countdownSec: 1,       // "영업 시작!" 배너
   bgmRushSec: 10,        // 마감 10초 전 BGM 템포 업
   startMoney: 0,

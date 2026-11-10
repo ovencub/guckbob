@@ -1,7 +1,7 @@
 // 봇의 정비 시간 구매 전략: tools/progression_model.py 의 PLAN 순서와 같다 (TV 출연 안 삼, 귀빈은 별점 4.5 이상일 때, 실패하면 재도전)
 import { BOT_PLAN, BOT } from '../data/bot';
 import type { Grade, StaffRole } from '../data/staff';
-import { buy, offers, regrade } from './catalog';
+import { buy, offers, regrade, regradeCost } from './catalog';
 import { utilityCost, wagesOf } from './economy';
 import { STAGES } from '../data/layouts';
 import { ratingShown } from './state';
@@ -28,8 +28,10 @@ export function botShop(s: GameState, cur: PlanCursor, log?: string[]): number {
     const [kind, role, g] = step.id.split(':');
     if (kind === 'up') {
       // 등급 올리기: 그 역할 직원 전부를 이 등급 이상으로
-      if (s.money < reserve) break;
-      for (const m of s.staff) if (m.role === (role as StaffRole) && m.grade < Number(g)) regrade(s, m.id, Number(g) as Grade);
+      const ups = s.staff.filter((m) => m.role === (role as StaffRole) && m.grade < Number(g));
+      const cost = ups.reduce((a, m) => a + regradeCost(s, m.id, Number(g) as Grade), 0);
+      if (s.money - cost < reserve) break;
+      for (const m of ups) regrade(s, m.id, Number(g) as Grade);
       cur.i++; buys++; log?.push(step.id);
       continue;
     }

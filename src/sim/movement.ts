@@ -34,6 +34,8 @@ export function nearestOther(s: GameState, c: Cat, x: number, z: number): number
   return Math.sqrt(best);
 }
 
+let lastBlocker = -1;
+
 function posOk(s: GameState, c: Cat, x: number, z: number): boolean {
   if (!c.free && !staticFree(geoOf(s.stage), x, z)) return false;
   const ds = s.dayState!;
@@ -47,7 +49,7 @@ function posOk(s: GameState, c: Cat, x: number, z: number): boolean {
       if (dn < SEP2) {
         // 이미 가까운 상태라면 멀어지는 움직임만 허용
         const dc = (ox - c.x) ** 2 + (oz - c.z) ** 2;
-        if (dn <= dc) return false;
+        if (dn <= dc) { lastBlocker = o.id; return false; }
       }
     }
   }
@@ -61,6 +63,36 @@ export function standingBlockers(s: GameState, c: Cat, range: number): Blocker[]
     if (o === c || !inHall(o) || o.moving) continue;
     if (Math.abs(o.x - c.x) > range || Math.abs(o.z - c.z) > range) continue;
     out.push({ x: o.x, z: o.z, r: CAT_DIM.sep });
+  }
+  return out;
+}
+
+/** 경로 계산용 장애물: 근처 고양이 + (똑똑한 서버) 손님이 앞으로 지나갈 자리 예측.
+ *  자기 위치·목표 근처는 비워 둔다 (안 그러면 출발·도착이 막혀 길이 없어진다) */
+export function routeBlockers(s: GameState, c: Cat, goal: Vec2): Blocker[] {
+  const out: Blocker[] = [];
+  const keep = (x: number, z: number) => Math.hypot(x - c.x, z - c.z) > CAT_DIM.sep && Math.hypot(x - goal.x, z - goal.z) > CAT_DIM.sep;
+  for (const o of s.dayState!.cats) {
+    if (o === c || !inHall(o)) continue;
+    if (Math.abs(o.x - c.x) > MOVE.blockerRange || Math.abs(o.z - c.z) > MOVE.blockerRange) continue;
+    if (keep(o.x, o.z)) out.push({ x: o.x, z: o.z, r: CAT_DIM.sep });
+    if (c.lookSec > 0 && o.kind === 'guest' && o.goal && o.speed > 0) {
+      // 손님이 lookSec 동안 걸어갈 길 위의 점들
+      let budget = o.speed * c.lookSec;
+      let px = o.x; let pz = o.z;
+      for (const wp of o.path.length ? o.path : [o.goal]) {
+        const seg = Math.hypot(wp.x - px, wp.z - pz);
+        const n = Math.ceil(Math.min(seg, budget) / MOVE.predictStep);
+        for (let i = 1; i <= n; i++) {
+          const k = Math.min(1, (i * MOVE.predictStep) / Math.max(seg, 1e-6));
+          const x = px + (wp.x - px) * k; const z = pz + (wp.z - pz) * k;
+          if (keep(x, z)) out.push({ x, z, r: CAT_DIM.sep * MOVE.predictShrink });
+        }
+        budget -= seg;
+        if (budget <= 0) break;
+        px = wp.x; pz = wp.z;
+      }
+    }
   }
   return out;
 }
@@ -99,7 +131,8 @@ export function walkTo(s: GameState, c: Cat, goal: Vec2, free = false, blockers:
   c.blockedT = 0;
   c.bestD = Infinity;
   if (free) { c.path = [c.goal]; return true; }
-  const p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, blockers);
+  let p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, blockers);
+  if (!p && blockers.length) p = findPath(gridOf(s.stage), { x: c.x, z: c.z }, goal, []);
   if (!p) { c.path = [c.goal]; return false; }
   c.path = p;
   return true;
@@ -129,7 +162,9 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
   const uz = dz / dist;
   let nx = c.x + ux * step;
   let nz = c.z + uz * step;
+  lastBlocker = -1;
   let moved = posOk(s, c, nx, nz);
+  const firstBlocker = lastBlocker;
   let side = false;
   // 좌석 출입(직선 구간)에서는 옆걸음 금지: 정적 검사를 안 하므로 옆 의자로 밀려날 수 있다
   if (!moved && !c.free) {
@@ -146,6 +181,7 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
       if (moved) break;
     }
   }
+  c.blockedBy = moved ? -1 : firstBlocker;
   if (moved) {
     const mx = nx - c.x;
     const mz = nz - c.z;
@@ -163,9 +199,11 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
   const gd = remaining(c);
   if (gd < c.bestD - MOVE.progressEps) { c.bestD = gd; c.blockedT = 0; }
   else c.blockedT += dt;
-  if (!c.free && c.blockedT >= MOVE.stuckReplanSec && c.blockedT - dt < MOVE.stuckReplanSec) {
+  const rp = c.replanSec || MOVE.stuckReplanSec;
+  // 막히면 rp 간격으로 다시 계산 (똑똑한 서버일수록 자주, 손님 예측 포함)
+  if (!c.free && c.blockedT >= rp && Math.floor(c.blockedT / rp) !== Math.floor((c.blockedT - dt) / rp)) {
     const bt = c.blockedT; const bd = c.bestD;
-    walkTo(s, c, c.goal!, false, nearbyBlockers(s, c, 4));
+    walkTo(s, c, c.goal!, false, c.lookSec > 0 || c.kind === 'server' ? routeBlockers(s, c, c.goal!) : nearbyBlockers(s, c, 4));
     c.blockedT = bt; c.bestD = Math.min(bd, remaining(c) + MOVE.progressEps);
   }
   return false;

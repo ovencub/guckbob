@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buy, offers } from '../src/sim/catalog';
+import { buy, offers, regradeCost } from '../src/sim/catalog';
+import { CHEF, hireFee } from '../src/data/staff';
 import { avgRevenue3, tierReady } from '../src/sim/economy';
 import { pushReview } from '../src/sim/review';
 import { finishSettle, startDay, step } from '../src/sim/sim';
@@ -82,10 +83,22 @@ describe('하루 흐름·정산 (GDD 3장, 12장)', () => {
 
   it('직원 최대 인원: 주방장 3, 서버 2, 설거지 1', () => {
     const s = newGame(1);
+    s.money = 10_000_000;
     for (let i = 0; i < 5; i++) buy(s, 'hire:server:0');
     expect(s.staff.filter((m) => m.role === 'server').length).toBe(2);
     for (let i = 0; i < 5; i++) buy(s, 'hire:dish:0');
     expect(s.staff.filter((m) => m.role === 'dish').length).toBe(1);
+  });
+
+  it('직원 고용은 계약금(일당 × 2.5)이 들고, 승급은 계약금 차액', () => {
+    const s = newGame(1);
+    expect(buy(s, 'hire:chef:0')).toBe(false); // 돈 0
+    s.money = 1_000_000;
+    expect(buy(s, 'hire:chef:0')).toBe(true);
+    expect(s.money).toBe(1_000_000 - hireFee(CHEF.wage[0]));
+    const id = s.staff[0].id;
+    expect(regradeCost(s, id, 1)).toBe(hireFee(CHEF.wage[1]) - hireFee(CHEF.wage[0]));
+    expect(regradeCost(s, id, 0)).toBe(0);
   });
 
   it('같은 시드면 같은 결과 (결정적)', () => {

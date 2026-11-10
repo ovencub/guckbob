@@ -16,7 +16,7 @@ describe('직원 AI (GDD 6장)', () => {
   it('주방장 1명 + 화구 3개: 동시에 조리하는 건 2개까지', () => {
     const { s, ev } = openDay(1, (g) => { hire(g, 'chef', 0); g.burners = 3; });
     seatNow(s, 4, 1, ['sundae', 'sundae', 'sundae', 'sundae']);
-    run(s, 0.2, ev);
+    run(s, 1, ev);
     expect(s.dayState!.burners.filter((b) => b.phase === 'cooking').length).toBe(2);
   });
 
@@ -62,6 +62,20 @@ describe('직원 AI (GDD 6장)', () => {
     ds.sink = 0;
     run(s, 6, ev);
     expect(ds.tables[1].dirty).toBe(false);
+  });
+
+  it('주방장은 끓일 화구 앞으로 걸어가서 조리한다', () => {
+    const { s, ev } = openDay(1, (g) => { hire(g, 'chef', 0); g.burners = 2; });
+    const chef = s.dayState!.cats.find((c) => c.kind === 'chef')!;
+    const g = geoOf(0);
+    expect(chef.x).toBeCloseTo(g.burners[0].x);
+    seatNow(s, 2, 1, ['sundae', 'sundae']);
+    run(s, 0.1, ev);
+    expect(s.dayState!.burners[0].phase).toBe('cooking');
+    expect(s.dayState!.burners[1].phase).toBe('empty');
+    run(s, 0.4, ev);
+    expect(chef.x).toBeCloseTo(g.burners[1].x, 2);
+    expect(s.dayState!.burners[1].phase).toBe('cooking');
   });
 
   it('설거지 알바: 등급별 세척 시간', () => {

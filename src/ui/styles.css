@@ -87,3 +87,5 @@ button { font-family: var(--display); color: var(--ink); }
 .fly-coin { position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--coin); border: 2.5px solid var(--ink); z-index: 26; }
 .pill.bump { animation: bump .25s ease-out; }
 @keyframes bump { 40% { transform: scale(1.12); } }
+/* 시트·오버레이·메뉴는 전체가 입력을 받는다 (#ui > * 보다 구체적으로) — PC 휠 스크롤 */
+#ui > .prep, #ui > .overlay, #ui > .bmenu { pointer-events: auto; }
