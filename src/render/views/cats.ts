@@ -10,6 +10,7 @@ import { FURS, SCARVES, makeCat, type CatModel, type CatRole } from '../models/c
 import { setBowl } from '../models/bowl';
 
 const EAT_LEAN = 0.1; // 식사 중 기울기 최대(rad), ART 8.4
+const WALK_TAIL = 0.25; // 걷는 동안 꼬리 흔들기 비율
 
 function sharedSprite(w: number, h: number, draw: (x: CanvasRenderingContext2D) => void): THREE.SpriteMaterial {
   const c = document.createElement('canvas');
@@ -118,6 +119,8 @@ export class CatsView {
     const walking = c.moving || (c.kind === 'guest' && (c.state === 'toSeat' || c.state === 'toExit' || c.state === 'enterSeat' || c.state === 'exitSeat') && Math.hypot(c.x - c.px, c.z - c.pz) > 1e-4);
     if (walking || (c.state === 'queue' && Math.hypot(c.x - c.px, c.z - c.pz) > 1e-4)) {
       m.bodyPivot.position.y = 0.02 + Math.abs(Math.sin(t * 22 + m.ph)) * 0.07;
+      // 걸을 때 꼬리는 뒤로 곧게 (옆으로 흔들면 의자 옆을 지날 때 쓸린다)
+      m.tail.rotation.y *= WALK_TAIL;
     }
     if (c.kind === 'guest' && team) {
       const seated = c.state === 'seated';

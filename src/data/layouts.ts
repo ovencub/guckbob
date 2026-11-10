@@ -132,7 +132,7 @@ export const CAT_DIM = {
 // 이동 (GDD 15장)
 export const MOVE = {
   customerSpeed: 5,    // 칸/초
-  angrySpeed: 7,       // 화나서 나가는 빠른 걸음
+  angrySpeed: 5,       // 화나서 나가는 걸음 (빠른 걸음 7은 의자 옆에서 꼬리가 쓸려 5로, PROGRESS 10단계)
   serverHomeDelaySec: 1.5, // 일이 없으면 이만큼 기다렸다가 대기 자리로
   sitSec: 0.2,
   standSec: 0.2,

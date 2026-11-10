@@ -1,8 +1,8 @@
 # 진행 기록 (PROGRESS)
 
 ## 현재 상태
-- 마지막 완료 단계: 6
-- 다음 단계: 7
+- 마지막 완료 단계: 10 (전체 완료)
+- 다음 단계: 없음 (출시 후 수정은 PROMPT.md D)
 
 ## 0단계 — 환경 점검
 **범위:** `.gitignore`, `docs/PROGRESS.md`, git 저장소 초기화. 코드 파일 없음.
@@ -24,8 +24,6 @@
 | 6 | 비용·티어 매출 기준 조정 (BALANCE_LOG) | 구현 판매 상한이 모델의 ~75% |
 | 1 | 카메라 최소 배율 44px/칸. 그보다 작아져야 다 보이면 주방이 보이게 맞추고 드래그·핀치 | CLAUDE.md "탭 대상 최소 44px" 우선 |
 
-## 알려진 문제
-(없음)
 
 ## 1단계 — 프로젝트 뼈대 + 정적 가게
 **범위:** `package.json`, `tsconfig.json`, `vite.config.ts`, `playwright.config.ts`, `index.html`, `src/main.ts`, `src/data/*`(레이아웃·팔레트 포함), `src/render/{toon,canvas2d,sprites,camera,renderer}.ts`, `src/render/models/{cat,bowl,shop,props}.ts`, `src/ui/{hud.ts,styles.css}`, `tools/shoot-reference.ts`, `e2e/phase1.spec.ts`. sim은 건드리지 않음.
@@ -107,3 +105,33 @@
 **범위:** `src/audio/{sfx,bgm}.ts`, `src/ui/{tutorial,share,ending,result,cardArt}.ts`, `src/render/world.ts`(탭 눌림·흔들림·만세), `src/app.ts`·`src/main.ts`(플러그인 연결), `src/data/{audio,share}.ts`, `public/og.png`, `e2e/phase7.spec.ts`, `tests/share.test.ts`.
 - (진행 중, 사용량 한도로 중단) 작성 완료·타입 검사 통과: 효과음·BGM 합성(`src/audio`), 튜토리얼 손가락(`ui/tutorial.ts`), 엔딩 연출·결과 페이지(`ui/ending.ts`), 결과 카드·?r= 인코딩/검증·Web Share(`ui/share.ts`, `ui/cardArt.ts`), 플러그인 연결(`src/plugins.ts`), 탭 눌림·흔들림·만세, 디버그 `nearMichelin()`(배포본 숨김).
 - **남은 일 (7단계):** `e2e/phase7.spec.ts`(튜토리얼, 엔딩→결과→공유 링크→도전장 화면, 잘못된 ?r= 무시), `tests/share.test.ts`, `public/og.png`(1200×630), 스크린샷 확인. 그 뒤 8단계(모바일 품질)·9단계(배포)·10단계(최종 점검).
+
+### 오류 분석 — 10단계 재검사에서 겹침 1건 (손님 꼬리→의자 0.028)
+- **증상:** 5단계 e2e(직원 풀세트·4단계) 재실행에서 손님 꼬리가 의자에 0.028 (한계 0.02). 5단계 완료 때는 0건이었다.
+- **원인 추정:** 그 뒤 추가한 "화난 손님 빠른 걸음(7칸/초)" 때문에 의자 옆에서 방향을 틀 때 한 틱 이동이 커져 꼬리가 의자 상자 모서리를 쓸고 지나간다. 걷는 고양이 ↔ 의자 여유 0.53 은 5칸/초 기준으로 실측해 맞춘 값.
+- **근거:** 겹친 부위가 꼬리뿐이고 깊이가 5단계 때 같은 유형(0.025)과 비슷. 다른 부위·고양이끼리는 0건.
+- **수정 계획:** 의자 여유 0.53 → 0.57, 레이아웃 4단계 재검증 후 e2e 재실행.
+- **수정 결과:** 의자 여유를 넓히는 방법(0.55·0.57)은 4단계 레이아웃이 안 맞거나 밸런스가 무너져 기각. 화난 손님 걸음 5칸/초로 되돌려도 남음 → 겹친 고양이 상태를 보고서에 넣어 보니 `toSeat`(자리로 걷는 중) → 걷는 동안 꼬리 흔들기를 25%로 줄임. e2e 2회 연속 0건.
+
+- 7단계 완료: e2e `phase7.spec.ts`(튜토리얼·건너뛰기, 미슐랭 엔딩→결과→공유 링크→도전장 화면, 잘못된 ?r= 4종 무시) 통과. 디버그 프리셋에 맛 연구가 빠져 있던 것 수정. OG 이미지 `public/og.png`(`tools/make-og.py`). 스크린샷 `07-*.png`.
+
+## 8단계 — 모바일 품질
+**범위:** `index.html`(가로 모드 안내), `src/ui/extra.css`, `src/input/picker.ts`, `src/render/models/cat.ts`, `src/debug.ts`(`targets()`), `e2e/phase8.spec.ts`.
+- 세이프 에어리어(`env(safe-area-inset-*)`), `touch-action:none`·`overscroll-behavior:none`, 폰 가로 모드 → "세로로 돌려 주세요".
+- 390×844·360×780·430×932·1440×900 스크린샷 `08-*.png`, 모든 히트박스 화면상 44px 이상 확인.
+- **버그 발견·수정:** 앞쪽 테이블의 키 큰 히트박스가 화면상 배식대를 가려 국밥을 못 누르는 자리가 있었다 → 레이캐스트가 주방 대상(화구·배식대·개수대)을 맞추면 그쪽 우선.
+- 성능: 5초 평균 fps < 40 이면 픽셀 비율 1(기존). 고양이 얼굴 작은 부품 9개를 정점 색 공유 메쉬 1개로 합쳐 손님 최대 장면 드로우콜 1,618 → 1,368 (목표 300은 미달, 알려진 문제). 소프트웨어 렌더러(swiftshader) fps 15.7 — 실기기 수치 아님.
+
+## 9단계 — 배포
+- `.github/workflows/deploy.yml`(push main → 테스트·빌드 → Pages), `gh repo create ovencub/guckbob --public`, Pages 소스 = GitHub Actions. 첫 실행 성공(빌드 18초·배포 43초).
+- `tools/check-live.ts` 로 https://ovencub.github.io/guckbob/ 확인: 캔버스 렌더링, 콘솔 에러 0, `?debug=1` 치트 숨김. 스크린샷 `09-live.png`. README 작성.
+
+## 10단계 — 최종 점검
+- `docs/QA_CHECKLIST.md` 작성. 단위 테스트 65개, e2e 12개 통과, 겹침 0건, 밸런스 목표 충족.
+
+## 알려진 문제
+- 드로우콜: 손님 최대(직원 풀세트·10테이블) 약 1,370 (ART 목표 300). 고양이를 인스턴싱하거나 부품을 더 합쳐야 한다. 실기기 fps 는 측정하지 못함.
+- 3·4단계 가게는 44px/칸 최소 배율 때문에 한 화면에 다 안 들어가 드래그가 필요하다.
+- 미슐랭 도달일 편차가 크다(1.3탭 시드별 16~29일): 후반 별점이 4.3~4.5 사이를 오가며 "별점 4.5인 날"을 기다리는 시간. 서버 2명의 처리량이 별점의 병목.
+- 진행 모델(`tools/progression_model.py`)은 봇보다 약 5일 빠르게 예측(한 바퀴 12초·서버 왕복 8칸 가정). 상한 추정으로 남겨 둠.
+- 주방장 앞발 ↔ 조리대 0.020칸(허용 한계와 같음).

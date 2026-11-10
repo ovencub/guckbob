@@ -127,7 +127,7 @@ export class World {
       const tm = c.kind === 'guest' ? ds.teams.find((t) => t.id === c.team) : undefined;
       const seatOwn = tm && tm.table >= 0 && c.seat >= 0 && ['enterSeat', 'sitting', 'seated', 'standing', 'exitSeat'].includes(c.state);
       const seat = seatOwn ? this.geo!.tables[tm!.table].seats[c.seat] : undefined;
-      list.push({ c, m, name: `${c.kind}#${c.id}`, seat });
+      list.push({ c, m, name: `${c.kind}#${c.id}(${c.state})`, seat });
     }
     this.overlap!.add(overlapNow(list, this.geo!.colliders));
   }

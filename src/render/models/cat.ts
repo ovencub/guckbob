@@ -1,8 +1,9 @@
 // 고양이 (ART.md 4장, 레퍼런스 makeCat). 몸통+머리 하나인 콩 모양, 외곽선, 털 무늬 6종.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CAT_DIM } from '../../data/layouts';
 import { makeBowl, type BowlModel } from './bowl';
-import { M, blob, cone, cyl, geo, gradientMap, inkBasic, sphere, torus, whiteBasic } from '../toon';
+import { M, blob, cone, cyl, geo, gradientMap, sphere, torus } from '../toon';
 
 export const FURS = ['cheese', 'mackerel', 'calico', 'tuxedo', 'cream', 'black'] as const;
 export type Fur = (typeof FURS)[number];
@@ -48,6 +49,34 @@ function apronMat(col: number): THREE.MeshToonMaterial {
 }
 const flashMat = new THREE.MeshToonMaterial({ color: 0xff6b5b, gradientMap });
 
+const faceMat = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap });
+let faceCache: THREE.BufferGeometry | null = null;
+/** 얼굴 작은 부품들을 정점 색으로 합친 형상 (모든 고양이가 공유) */
+function faceGeo(): THREE.BufferGeometry {
+  if (faceCache) return faceCache;
+  const parts: THREE.BufferGeometry[] = [];
+  const add = (g: THREE.BufferGeometry, color: number, p: [number, number, number], r: [number, number, number] = [0, 0, 0], sc: [number, number, number] = [1, 1, 1]) => {
+    const c = g.clone();
+    c.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...p), new THREE.Quaternion().setFromEuler(new THREE.Euler(...r)), new THREE.Vector3(...sc)));
+    const col = new THREE.Color(color);
+    const n = c.attributes.position.count;
+    const arr = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { arr[i * 3] = col.r; arr[i * 3 + 1] = col.g; arr[i * 3 + 2] = col.b; }
+    c.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+    parts.push(c);
+  };
+  add(sphere(0.035, 8, 6), 0xff8fa3, [0, 0.565, 0.445]);
+  for (const sx of [-1, 1]) {
+    add(sphere(0.05, 10, 8), 0x2b2a33, [sx * 0.16, 0.665, 0.372]);
+    add(sphere(0.016, 6, 5), 0xffffff, [sx * 0.16 + 0.016, 0.683, 0.418]);
+    add(sphere(0.06, 10, 8), 0xffb3b8, [sx * 0.27, 0.545, 0.31], [0, 0, 0], [1, 0.55, 0.35]);
+  }
+  for (const mx of [-0.028, 0.028]) add(torus(0.028, 0.008, 4, 10, Math.PI), 0x2b2a33, [mx, 0.515, 0.452], [0, 0, Math.PI]);
+  faceCache = mergeGeometries(parts, false) as THREE.BufferGeometry;
+  return faceCache;
+}
+
+
 export interface CatOpts { fur: Fur; role: CatRole; scarf?: number; badge?: 0 | 1 | 2 }
 
 export interface CatModel {
@@ -82,19 +111,13 @@ export function makeCat(o: CatOpts, ph: number): CatModel {
   const head = new THREE.Group();
   bodyPivot.add(head);
   M(sphere(0.13, 14, 10), 0xfff8ee, { p: [0, 0.5, 0.36], s: [1.35, 0.85, 0.7], parent: head, ol: 0.018 });
-  M(sphere(0.035, 8, 6), 0xff8fa3, { p: [0, 0.565, 0.445], parent: head, ol: 0 });
+  // 코·눈·하이라이트·볼·입은 하나로 합친 공유 메쉬 (드로우콜 9 → 1)
+  head.add(new THREE.Mesh(faceGeo(), faceMat));
   const ears: THREE.Mesh[] = [];
   for (const sx of [-1, 1]) {
-    const e = new THREE.Mesh(sphere(0.05, 10, 8), inkBasic); e.position.set(sx * 0.16, 0.665, 0.372); head.add(e);
-    const hl = new THREE.Mesh(sphere(0.016, 6, 5), whiteBasic); hl.position.set(sx * 0.16 + 0.016, 0.683, 0.418); head.add(hl);
-    M(sphere(0.06, 10, 8), 0xffb3b8, { p: [sx * 0.27, 0.545, 0.31], s: [1, 0.55, 0.35], parent: head, ol: 0 });
     const ear = M(cone(0.13, 0.24, 12), earCol, { p: [sx * 0.22, 0.885, 0.02], r: [0, 0, -sx * 0.35], parent: head, ol: 0.022 });
     M(cone(0.075, 0.14, 10), 0xffb3b8, { p: [0, -0.02, 0.065], parent: ear, ol: 0 });
     ears.push(ear);
-  }
-  const mouthGeo = torus(0.028, 0.008, 4, 10, Math.PI);
-  for (const mx of [-0.028, 0.028]) {
-    const m = new THREE.Mesh(mouthGeo, inkBasic); m.rotation.z = Math.PI; m.position.set(mx, 0.515, 0.452); head.add(m);
   }
   const pawCol = o.role === 'dish' ? 0xffd23f : 0xfff8ee;
   const pawL = M(sphere(0.1, 12, 10), pawCol, { p: [-0.17, 0.15, 0.33], s: [1, 0.8, 1], parent: bodyPivot, ol: 0.02 });

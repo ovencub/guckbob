@@ -24,3 +24,10 @@
 .face { display: flex; flex-direction: column; align-items: center; font-size: 11px; }
 .face canvas { width: 54px; height: 63px; }
 .btns.col { flex-direction: column; }
+/* 가로 모드(폰) → 세로로 돌려 달라는 안내 */
+.rotate { display: none; }
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .rotate { display: flex; position: fixed; inset: 0; z-index: 100; background: var(--sand); align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; font-size: 22px; pointer-events: auto; text-align: center; }
+  .rotate b { font-size: 56px; }
+}

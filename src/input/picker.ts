@@ -37,9 +37,10 @@ export class Picker {
     this.ray.setFromCamera(this.ndc, this.r.camera.cam);
     const res = this.ray.intersectObjects(this.hits(), false);
     if (!res.length) return null;
-    // 겹치면 카메라에 가까운 것. 단 같은 거리면 작은 대상(화구·배식대)을 우선
-    const o = res[0].object;
-    return { kind: o.userData.kind as string, id: o.userData.id as number, point: res[0].point };
+    // 테이블 히트박스는 크고 키가 커서 뒤쪽 배식대·화구·개수대를 가릴 수 있다 → 주방 대상이 맞으면 그쪽을 우선
+    const hit = res.find((h) => h.object.userData.kind !== 'table') ?? res[0];
+    const o = hit.object;
+    return { kind: o.userData.kind as string, id: o.userData.id as number, point: hit.point };
   }
 
   private down(e: PointerEvent): void {

@@ -1,4 +1,5 @@
 // 디버그 도구 (?debug=1 또는 ?debug=overlap). window.__guck 로 e2e 가 조작한다.
+import * as THREE from 'three';
 import { SIM_DT } from './data/balance';
 import { applyPreset, nearMichelin } from './debugPreset';
 import type { App } from './app';
@@ -23,6 +24,7 @@ export interface DebugApi {
   fast(seconds: number): void;
   drawCalls(): number;
   nearMichelin(): void;
+  targets(): Array<{ kind: string; id: number; x: number; y: number; w: number; h: number }>;
 }
 
 export function installDebug(game: Game, mode: string, app?: App): DebugApi {
@@ -69,6 +71,24 @@ export function installDebug(game: Game, mode: string, app?: App): DebugApi {
       }
     },
     drawCalls: () => game.r.drawCalls,
+    /** 탭 대상 히트박스의 화면 위치·크기 (px) */
+    targets() {
+      const out: Array<{ kind: string; id: number; x: number; y: number; w: number; h: number }> = [];
+      const r = game.r.canvas.getBoundingClientRect();
+      for (const o of game.world.hits) {
+        const m = o as THREE.Mesh;
+        m.geometry.computeBoundingBox();
+        const b = m.geometry.boundingBox!.clone().applyMatrix4(m.matrixWorld);
+        let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+        for (const cx of [b.min.x, b.max.x]) for (const cy of [b.min.y, b.max.y]) for (const cz of [b.min.z, b.max.z]) {
+          const p = game.r.toScreen(new THREE.Vector3(cx, cy, cz), { x: 0, y: 0 });
+          x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+        }
+        const c = game.r.toScreen(m.getWorldPosition(new THREE.Vector3()), { x: 0, y: 0 });
+        out.push({ kind: o.userData.kind as string, id: o.userData.id as number, x: c.x + r.left, y: c.y + r.top, w: x1 - x0, h: y1 - y0 });
+      }
+      return out;
+    },
     nearMichelin() { nearMichelin(game.s); game.world.sync(game.s); },
   };
   (window as unknown as { __guck: DebugApi }).__guck = api;
