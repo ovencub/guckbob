@@ -134,7 +134,7 @@ export class Game {
     const ds = s.dayState;
     this.hud.update({
       money: s.money, rating: ratingShown(s), tierName: TIERS[s.tier].name, day: s.day,
-      progress: ds ? ds.t / DAY.openSec : 0, closed: s.phase === 'overtime' || s.phase === 'settle',
+      progress: ds ? Math.min(ds.t, DAY.openSec) / DAY.openSec : 0, closed: s.phase === 'overtime' || s.phase === 'settle',
       clean: ds ? ds.clean : s.bowls, bowls: s.bowls, sink: ds ? ds.sink : 0, sinkCap: sinkCap(s), queue: ds ? ds.queue.length : 0,
       tip: tipFor(s), paused: this.paused, muted: this.hooks.sound.muted,
     }, this.shownMoney);

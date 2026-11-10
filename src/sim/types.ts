@@ -46,7 +46,7 @@ export interface Cat {
   id: number; kind: CatKind; team: number; staff: number; seat: number;
   x: number; z: number; ry: number; y: number; px: number; pz: number; pry: number; py: number;
   state: CatState; stateT: number; path: Vec2[]; goal: Vec2 | null; speed: number;
-  blockedT: number; bestD: number; blockedBy: number; lookSec: number; replanSec: number; dodgeT: number; moving: boolean; free: boolean; fur: number; scarf: number;
+  blockedT: number; bestD: number; blockedBy: number; lookSec: number; replanSec: number; dodgeT: number; passSide: number; passT: number; moving: boolean; free: boolean; fur: number; scarf: number;
   // 직원
   task: ServerTask | null; carry: Dish[]; actT: number;
 }
@@ -75,7 +75,7 @@ export interface DayState {
   washCd: number; dishT: number; nextId: number;
   revenue: number; sold: number; ingredients: number; reviews: number[];
   teamsServed: number; guests: number; missed: number; angry: number; burnt: number; burnedByPlayer: number;
-  bowlZeroSec: number; sinkFullSec: number; peakQueue: number; comboN: number; comboT: number; ratingOpen: number; washed: number;
+  bowlZeroSec: number; sinkFullSec: number; peakQueue: number; comboN: number; comboT: number; ratingOpen: number; washed: number; teleports: number;
 }
 
 export interface Promo { id: PromoId; days: number }

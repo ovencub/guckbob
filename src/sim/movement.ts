@@ -119,10 +119,6 @@ export function remaining(c: Cat): number {
   return d;
 }
 
-function lineOkFrom(s: GameState, c: Cat): boolean {
-  const wp = c.path[0] ?? c.goal!;
-  return lineOk(gridOf(s.stage), { x: c.x, z: c.z }, wp, []);
-}
 
 /** goal 까지 경로 설정. free=true 면 정적 장애물 검사 없이 직선 (좌석 출입) */
 export function walkTo(s: GameState, c: Cat, goal: Vec2, free = false, blockers: Blocker[] = []): boolean {
@@ -160,6 +156,9 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
   const step = Math.min(dist, c.speed * dt);
   const ux = dx / dist;
   const uz = dz / dist;
+  const fx = ux;
+  const fz = uz;
+  c.passT = Math.max(0, c.passT - dt);
   let nx = c.x + ux * step;
   let nz = c.z + uz * step;
   lastBlocker = -1;
@@ -168,32 +167,29 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
   let side = false;
   // 좌석 출입(직선 구간)에서는 옆걸음 금지: 정적 검사를 안 하므로 옆 의자로 밀려날 수 있다
   if (!moved && !c.free) {
-    // 비켜 가기: 진행 방향에서 조금씩 틀어 본다
-    for (const deg of MOVE.sidestepDeg) {
-      for (const sg of [1, -1]) {
+    // 막은 고양이 기준으로 비켜 갈 쪽을 정하고(한동안 유지) 그쪽으로만 옆걸음 → 좌우로 떨지 않는다
+    const o = firstBlocker >= 0 ? s.dayState!.cats.find((k) => k.id === firstBlocker) : undefined;
+    if (o) choosePassSide(c, o, fx, fz);
+    if (!c.passSide) c.passSide = 1;
+    for (const sg of [c.passSide, -c.passSide]) {
+      for (const deg of MOVE.sidestepDeg) {
         const a = (sg * deg * Math.PI) / 180;
-        const cx = ux * Math.cos(a) - uz * Math.sin(a);
-        const cz = ux * Math.sin(a) + uz * Math.cos(a);
-        const tx = c.x + cx * step * 0.8;
-        const tz = c.z + cz * step * 0.8;
+        const cx = fx * Math.cos(a) - fz * Math.sin(a);
+        const cz = fx * Math.sin(a) + fz * Math.cos(a);
+        const tx = c.x + cx * step * MOVE.sideSpeed;
+        const tz = c.z + cz * step * MOVE.sideSpeed;
         if (posOk(s, c, tx, tz)) { nx = tx; nz = tz; moved = true; side = true; break; }
       }
-      if (moved) break;
+      if (moved) { if (sg !== c.passSide) { c.passSide = sg; c.passT = MOVE.passHoldSec; } break; }
     }
   }
   c.blockedBy = moved ? -1 : firstBlocker;
   if (moved) {
-    const mx = nx - c.x;
-    const mz = nz - c.z;
     c.x = nx; c.z = nz;
-    c.ry = angleTo(c.ry, Math.atan2(mx, mz), TURN_RATE * dt);
+    // 얼굴은 가려는 방향을 본다 (옆걸음 때마다 몸이 돌아가 떨려 보이지 않게)
+    c.ry = angleTo(c.ry, Math.atan2(fx, fz), TURN_RATE * dt);
     c.moving = true;
-    if (side && !c.free && !lineOkFrom(s, c)) {
-      // 옆으로 비켰더니 다음 지점까지 직선이 막혔다 → 경로 다시 (끼임 시간은 유지)
-      const bt = c.blockedT; const bd = c.bestD;
-      walkTo(s, c, c.goal!, false);
-      c.blockedT = bt; c.bestD = Math.min(bd, remaining(c) + MOVE.progressEps);
-    }
+    void side;
   }
   // 끼임 = 남은 경로 길이가 줄지 않은 시간 (옆걸음 왕복도 끼임으로 본다)
   const gd = remaining(c);
@@ -207,6 +203,41 @@ export function stepWalk(s: GameState, c: Cat, dt: number): boolean {
     c.blockedT = bt; c.bestD = Math.min(bd, remaining(c) + MOVE.progressEps);
   }
   return false;
+}
+
+/** 비켜 갈 쪽 정하기: 상대가 왼쪽에 있으면 오른쪽으로. 정면이면 오른쪽(서로 같은 규칙 → 엇갈려 지나감). 정하면 한동안 유지 */
+function choosePassSide(c: Cat, o: Cat, ux: number, uz: number): void {
+  if (c.passT > 0 && c.passSide) return;
+  const lat = (o.x - c.x) * -uz + (o.z - c.z) * ux; // +면 상대가 왼쪽
+  c.passSide = Math.abs(lat) < 0.08 ? -1 : lat > 0 ? -1 : 1;
+  c.passT = MOVE.passHoldSec;
+}
+
+/** 길을 막고 있을 때 비켜 설 자리: 상대(와 상대가 갈 다음 지점)에서 가장 먼 빈 자리. 가까운 반경부터 */
+export function asideSpot(s: GameState, c: Cat, other: Cat): Vec2 | null {
+  const g = geoOf(s.stage);
+  const ahead = other.path[0] ?? other.goal ?? { x: other.x, z: other.z };
+  for (const r of MOVE.dodgeRadii) {
+    let best: Vec2 | null = null;
+    let bestScore = -Infinity;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const p = { x: c.x + Math.cos(a) * r, z: c.z + Math.sin(a) * r };
+      if (!staticFree(g, p.x, p.z) || !spotClear(s, p.x, p.z, c)) continue;
+      if (!lineOk(gridOf(s.stage), { x: c.x, z: c.z }, p, [])) continue;
+      const score = Math.min(Math.hypot(p.x - other.x, p.z - other.z), segDist(p, other, ahead));
+      if (score > bestScore) { bestScore = score; best = p; }
+    }
+    if (best && bestScore >= CAT_DIM.sep) return best;
+  }
+  return null;
+}
+
+function segDist(p: Vec2, a: Vec2, b: Vec2): number {
+  const dx = b.x - a.x; const dz = b.z - a.z;
+  const l2 = dx * dx + dz * dz || 1e-9;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / l2));
+  return Math.hypot(p.x - (a.x + dx * t), p.z - (a.z + dz * t));
 }
 
 /** 직선 이동 (보도의 웨이팅 줄 등 장애물 없는 곳) */

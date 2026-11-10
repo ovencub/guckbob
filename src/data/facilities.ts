@@ -20,6 +20,6 @@ export const SINKS = [
   { name: '업소용', slots: 32, cost: 200000 },
 ] as const;
 
-export const KIOSK = { cost: 150000 } as const;
+export const KIOSK = { cost: 120000 } as const;
 
 export const UTILITY = { base: 2000, perBurner: 2000 } as const;

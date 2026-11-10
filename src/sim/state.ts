@@ -93,14 +93,14 @@ export function newDayState(s: GameState): DayState {
     washCd: 0, dishT: 0, nextId: 1,
     revenue: 0, sold: 0, ingredients: 0, reviews: [],
     teamsServed: 0, guests: 0, missed: 0, angry: 0, burnt: 0, burnedByPlayer: 0,
-    bowlZeroSec: 0, sinkFullSec: 0, peakQueue: 0, comboN: 0, comboT: 0, ratingOpen: rating(s), washed: 0,
+    bowlZeroSec: 0, sinkFullSec: 0, peakQueue: 0, comboN: 0, comboT: 0, ratingOpen: rating(s), washed: 0, teleports: 0,
   };
 }
 
 export function blankCat(id: number, kind: Cat['kind'], x: number, z: number, ry: number): Cat {
   return {
     id, kind, team: -1, staff: -1, seat: -1, x, z, ry, y: 0, px: x, pz: z, pry: ry, py: 0,
-    state: 'idle', stateT: 0, path: [], goal: null, speed: 0, blockedT: 0, bestD: Infinity, blockedBy: -1, lookSec: 0, replanSec: 0, dodgeT: 0, moving: false, free: false, fur: 0, scarf: 0,
+    state: 'idle', stateT: 0, path: [], goal: null, speed: 0, blockedT: 0, bestD: Infinity, blockedBy: -1, lookSec: 0, replanSec: 0, dodgeT: 0, passSide: 0, passT: 0, moving: false, free: false, fur: 0, scarf: 0,
     task: null, carry: [], actT: 0,
   };
 }

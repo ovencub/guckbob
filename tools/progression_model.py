@@ -28,14 +28,14 @@ VIP_COST = 500000
 # 구매 순서(봇의 단순 전략과 같게): (항목, 비용 또는 직원 등급, 필요 티어 index). 비용은 GDD 7~10장과 같다
 B = 25000  # 그릇 +2개
 PLAN = [('menu_h', 60000, 0), ('bowls', B, 0), ('burner', 60000, 0), ('server', 1, 0), ('chef', 1, 0),
-        ('recipe', 50000, 0), ('sink', 50000, 0), ('bowls', B, 0), ('kiosk', 150000, 0),
-        ('layout', 200000, 0), ('chef_up', 2, 0), ('server_up', 2, 0), ('recipe', 100000, 0), ('menu_y', 270000, 1),
+        ('recipe', 50000, 0), ('sink', 50000, 0), ('bowls', B, 0), ('kiosk', 120000, 0),
+        ('layout', 160000, 0), ('chef_up', 2, 0), ('server_up', 2, 0), ('recipe', 90000, 0), ('menu_y', 270000, 1),
         ('dish', 1, 0), ('burner', 120000, 0), ('bowls', B, 0), ('bowls', B, 0), ('cost', 60000, 0),
-        ('chef', 2, 0), ('promo_google', 80000, 1),
-        ('layout', 350000, 1), ('chef_up', 3, 1), ('server_up', 3, 1), ('server', 3, 1), ('recipe', 180000, 2), ('sink', 100000, 0),
+        ('chef', 2, 0), ('promo_google', 70000, 1),
+        ('layout', 280000, 1), ('chef_up', 3, 1), ('server_up', 3, 1), ('server', 3, 1), ('recipe', 150000, 2), ('sink', 100000, 0),
         ('burner', 200000, 0), ('bowls', B, 0), ('bowls', B, 0), ('bowls', B, 0), ('cost', 100000, 0), ('dish_up', 3, 1),
-        ('promo_youtube', 150000, 2),
-        ('layout', 600000, 2), ('chef_up', 4, 2), ('server_up', 4, 2), ('chef', 4, 2), ('recipe', 300000, 3), ('burner', 300000, 0),
+        ('promo_youtube', 120000, 2),
+        ('layout', 450000, 2), ('chef_up', 4, 2), ('server_up', 4, 2), ('chef', 4, 2), ('recipe', 250000, 3), ('burner', 300000, 0),
         ('sink', 200000, 0), ('bowls', B, 0), ('bowls', B, 0), ('bowls', B, 0), ('bowls', B, 0),
         ('dish_up', 4, 2), ('cost', 160000, 0), ('vip', VIP_COST, 4)]   # TV 출연은 봇이 사지 않는다(과부하 위험)
 PROMO = {'promo_google': (0.45, 3), 'promo_youtube': (0.7, 3), 'promo_tv': (1.1, 4), 'vip': (0.0, 1)}   # 귀빈 방문은 손님을 늘리지 않는다

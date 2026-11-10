@@ -5,7 +5,7 @@ export const BOT = {
   reserveShare: 0.5,    // 하루 고정비의 50%는 남기고 산다 (진행 모델과 같음)
   passWaitSec: 6.0,     // 서버가 있어도 배식대에 이만큼 남은 국밥은 직접 서빙
   urgentRatio: 0.38,     // 인내심을 이만큼 쓴 테이블은 직접 서빙
-  vipRating: 4.5,
+  vipRating: 4.4,
   vipTier: 4,
   targetDays: [19, 23] as readonly [number, number],
   targetMinutes: [52, 65] as readonly [number, number],

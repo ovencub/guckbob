@@ -17,7 +17,8 @@ test('PC: 정비 목록이 마우스 휠·드래그로 스크롤된다', async (
   });
   const list = page.locator('.plist');
   await expect(list).toBeVisible();
-  await page.waitForTimeout(500); // 시트가 올라오는 0.25초 연출이 끝난 뒤
+  // 시트가 올라오는 연출이 끝난 뒤 (CPU가 바쁘면 0.25초보다 오래 걸릴 수 있다)
+  await list.evaluate((el) => Promise.all((el.closest('.prep') as HTMLElement).getAnimations().map((a) => a.finished)));
   const dims = await list.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
   expect(dims.sh).toBeGreaterThan(dims.ch); // 내용이 넘친다 = 스크롤 가능
   const box = (await list.boundingBox())!;

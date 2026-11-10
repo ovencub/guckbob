@@ -31,15 +31,15 @@ const N1: TableSpec = { kind: 't4', x: 1.3, z: 4.45 };
 export const STAGES: readonly StageSpec[] = [
   { cost: 0, rent: 20000, left: -2.92, front: 5.0, burnerSlots: 3, tables: [T1, T2, T3] },
   {
-    cost: 200000, rent: 35000, left: -3.92, front: 7.0, burnerSlots: 4,
+    cost: 160000, rent: 35000, left: -3.92, front: 7.0, burnerSlots: 4,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.35, z: 2.75 }],
   },
   {
-    cost: 350000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
+    cost: 280000, rent: 60000, left: -4.92, front: 9.2, burnerSlots: 5,
     tables: [T1, T2, T3, N1, { kind: 't2', x: -3.9, z: 3.2 }, { kind: 't6', x: -2.5, z: 6.95 }, { kind: 't4', x: -3.75, z: -0.5 }],
   },
   {
-    cost: 600000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
+    cost: 450000, rent: 110000, left: -5.92, front: 13.1, burnerSlots: 6,
     tables: [
       T1, T2, T3, N1, { kind: 't2', x: -1.1, z: 10.85 }, { kind: 't6', x: -3.5, z: 10.85 }, { kind: 't4', x: -4.4, z: -0.5 },
       { kind: 't8', x: -3.0, z: 7.05 }, { kind: 't4', x: 1.3, z: 8.25 }, { kind: 't4', x: -4.4, z: 3.25 },
@@ -147,7 +147,11 @@ export const MOVE = {
   dodgeDist: 0.95,     // 비켜서는 거리
   dodgeMaxSec: 0.8,
   progressEps: 0.05,   // 목표까지 이만큼 가까워져야 '진행'으로 본다
-  stuckPoofSec: 1.6,   // 끼어서 못 움직이면 손님은 연기와 함께 자리/출구로 (결정 로그)
+  stuckPoofSec: 2.5,   // 끼어서 못 움직이면 손님은 연기와 함께 자리/출구로 (마지막 수단, 결정 로그)
+  passHoldSec: 0.8,    // 한 번 정한 비켜 갈 쪽을 유지하는 시간 (좌우로 떨지 않게)
+  sideSpeed: 0.7,      // 옆걸음 속도 비율
+  guestYieldSec: 0.5,  // 손님끼리 서로 막으면 이만큼 뒤 들어오는 손님이 비켜 선다
   arriveEps: 0.04,
-  sidestepDeg: [25, 50, 75, 100],
+  sidestepDeg: [30, 55, 80],
+  dodgeRadii: [0.95, 1.4, 1.9] as readonly number[],
 } as const;

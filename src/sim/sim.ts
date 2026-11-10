@@ -44,8 +44,9 @@ export function step(s: GameState, events: SimEvent[], dt = SIM_DT): void {
   }
   if (s.phase !== 'open' && s.phase !== 'overtime') return;
   const open = s.phase === 'open';
+  // 하루 시계는 마감 뒤에도 흐른다 (키오스크·인내심·식사 시간이 같은 시계를 쓴다)
+  ds.t += dt;
   if (open) {
-    ds.t += dt;
     spawnArrivals(s, dt, true, emit);
     if (ds.t >= DAY.openSec) {
       s.phase = 'overtime';

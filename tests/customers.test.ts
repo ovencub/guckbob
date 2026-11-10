@@ -159,6 +159,26 @@ describe('주문·인내심 (GDD 4.2, 4.5)', () => {
     expect(t.orderTaken).toBe(true);
   });
 
+  it('마감 뒤에 앉은 팀도 키오스크가 주문을 받는다', () => {
+    const { s, ev } = openDay(1, (g) => { g.kiosk = true; });
+    s.dayState!.t = 119;
+    const t = makeTeam(s, 1);
+    arrive(s, t, (e) => ev.push(e));
+    run(s, 4, ev);
+    expect(s.phase).toBe('overtime');
+    expect(t.state).toBe('seated');
+    run(s, 0.7, ev);
+    expect(t.orderTaken).toBe(true);
+  });
+
+  it('마감 뒤에도 인내심 게이지가 흐른다', () => {
+    const { s, ev } = openDay();
+    s.dayState!.t = 119;
+    const t = seatNow(s, 1, 0, ['sundae']);
+    run(s, 23, ev);
+    expect(t.angry).toBe(true);
+  });
+
   it('수육은 2인 이상 팀만, 팀당 최대 1개', () => {
     const { s } = openDay(5, (g) => { g.menus.suyuk = true; g.menus.spicy = true; });
     for (let i = 0; i < 300; i++) {

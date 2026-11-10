@@ -3,9 +3,9 @@ import { CAT_DIM, KITCHEN_LAYOUT as K } from '../data/layouts';
 import { MOVE } from '../data/layouts';
 import { SERVER } from '../data/staff';
 import { takeOrder } from './customers';
-import { chefStations, staticFree, type Vec2 } from './geometry';
+import { chefStations, type Vec2 } from './geometry';
 import { canClean, chefSpeed, clean, oldestWaiting, serveCarried, startCook, unmetOrders, wash } from './kitchen';
-import { faceToward, place, routeBlockers, spotClear, stepWalk, walkTo } from './movement';
+import { asideSpot, faceToward, place, routeBlockers, spotClear, stepWalk, walkTo } from './movement';
 import { blankCat, chefTaste, geoOf, sinkCap, washSecOf } from './state';
 import type { Cat, GameState, ServerTask, SimEvent, StaffMember, Team } from './types';
 
@@ -248,36 +248,17 @@ function finishTask(s: GameState, c: Cat, m: StaffMember, emit: Emit): void {
   releaseTask(s, c);
 }
 
-/** 나 때문에 막힌 손님이 있으면, 그 손님의 갈 길에서 먼 빈 자리로 비켜 선다 */
+/** 나 때문에 막힌 손님이 있으면(또는 손님과 서로 막혔으면) 손님 길에서 먼 빈 자리로 비켜 선다 (손님 우선) */
 function tryDodge(s: GameState, c: Cat): boolean {
   const ds = s.dayState!;
-  const g = geoOf(s.stage);
-  const stuck = ds.cats.find((o) => o.kind === 'guest' && o.blockedBy === c.id && o.blockedT >= MOVE.yieldAfterSec);
+  const stuck = ds.cats.find((o) => o.kind === 'guest' && o.blockedBy === c.id && o.blockedT >= MOVE.yieldAfterSec)
+    ?? (c.blockedBy >= 0 && c.blockedT >= MOVE.yieldAfterSec ? ds.cats.find((o) => o.id === c.blockedBy && o.kind === 'guest') : undefined);
   if (!stuck) return false;
-  const ahead = stuck.path[0] ?? stuck.goal ?? { x: stuck.x, z: stuck.z };
-  let best: Vec2 | null = null;
-  let bestScore = -Infinity;
-  for (let k = 0; k < 12; k++) {
-    const a = (k / 12) * Math.PI * 2;
-    const p = { x: c.x + Math.cos(a) * MOVE.dodgeDist, z: c.z + Math.sin(a) * MOVE.dodgeDist };
-    if (!staticFree(g, p.x, p.z) || !spotClear(s, p.x, p.z, c)) continue;
-    // 손님 위치·다음 지점 둘 다에서 멀수록 좋다
-    const score = Math.min(Math.hypot(p.x - stuck.x, p.z - stuck.z), segDist(p, stuck, ahead));
-    if (score > bestScore) { bestScore = score; best = p; }
-  }
-  if (!best || bestScore < CAT_DIM.sep) return false;
-  const keepGoal = c.goal;
-  walkTo(s, c, best);
+  const p = asideSpot(s, c, stuck);
+  if (!p) return false;
+  walkTo(s, c, p);
   c.dodgeT = MOVE.dodgeMaxSec;
-  void keepGoal;
   return true;
-}
-
-function segDist(p: Vec2, a: Vec2, b: Vec2): number {
-  const dx = b.x - a.x; const dz = b.z - a.z;
-  const l2 = dx * dx + dz * dz || 1e-9;
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / l2));
-  return Math.hypot(p.x - (a.x + dx * t), p.z - (a.z + dz * t));
 }
 
 export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void {
@@ -316,6 +297,7 @@ export function updateServer(s: GameState, c: Cat, dt: number, emit: Emit): void
       if (spotClear(s, c.goal.x, c.goal.z, c)) {
         // 오래 끼면 연기와 함께 목표 지점으로 (결정 로그)
         emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
+        s.dayState!.teleports++;
         place(c, c.goal.x, c.goal.z); c.blockedT = 0;
         emit({ k: 'poof', x: c.x, z: c.z, y: 0 });
       } else {

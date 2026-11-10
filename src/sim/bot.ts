@@ -26,7 +26,7 @@ export class PlayerBot {
     const ds = s.dayState;
     if (!ds || (s.phase !== 'open' && s.phase !== 'overtime')) { this.seen.clear(); return false; }
     this.budget = Math.min(BOT.menuPickCost, this.budget + dt * this.tapsPerSec);
-    const now = ds.t + ds.overT;
+    const now = ds.t;
     this.alive.clear();
     const act = this.pick(s, now);
     for (const k of [...this.seen.keys()]) if (!this.alive.has(k)) this.seen.delete(k);

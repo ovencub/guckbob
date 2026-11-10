@@ -83,7 +83,7 @@ export function collect(s: GameState, burner: number, emit: Emit, quiet = false)
     if (!quiet) { emit({ k: 'nope', what: 'burner', id: burner }); emit({ k: 'toast', msg: '배식대가 꽉 찼어요' }); }
     return false;
   }
-  ds.pass[slot] = { id: b.dishId, menu: b.menu, taste: b.taste, by: b.by, res: 0, at: ds.t + ds.overT };
+  ds.pass[slot] = { id: b.dishId, menu: b.menu, taste: b.taste, by: b.by, res: 0, at: ds.t };
   b.phase = 'empty';
   emit({ k: 'toPass', burner, slot });
   return true;

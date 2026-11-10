@@ -4,7 +4,7 @@ import { MOVE, SEAT_RULES } from '../data/layouts';
 import { MENUS, type MenuId } from '../data/menus';
 import { TIER_TOURIST } from '../data/tiers';
 import { endCombo } from './combo';
-import { faceToward, place, spotClear, stepStraight, stepWalk, walkTo } from './movement';
+import { asideSpot, faceToward, place, routeBlockers, spotClear, stepStraight, stepWalk, walkTo } from './movement';
 import { pushReview, sampleReview } from './review';
 import { rand, randInt, randRange, weighted } from './rng';
 import { arrivalRate, blankCat, geoOf, kindnessOf, maxTableCap, priceOf, queuePatience } from './state';
@@ -323,8 +323,21 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
       break;
     }
     case 'toSeat': {
+      // 손님끼리 서로 막혔으면 들어오는 손님이 잠깐 비켜 섰다가 다시 간다
+      if (c.dodgeT > 0) {
+        c.dodgeT -= dt;
+        if (stepWalk(s, c, dt) || c.dodgeT <= 0) { c.dodgeT = 0; walkTo(s, c, g.tables[t!.table].seats[c.seat].approach, false, routeBlockers(s, c, g.tables[t!.table].seats[c.seat].approach)); }
+        break;
+      }
+      if (c.blockedBy >= 0 && c.blockedT >= MOVE.guestYieldSec) {
+        const o = ds.cats.find((k) => k.id === c.blockedBy);
+        if (o && o.kind === 'guest' && (o.blockedBy === c.id || !o.moving)) {
+          const p = asideSpot(s, c, o);
+          if (p) { walkTo(s, c, p); c.dodgeT = MOVE.dodgeMaxSec; break; }
+        }
+      }
       if (stepWalk(s, c, dt)) { c.state = 'enterSeat'; c.stateT = 0; const st = g.tables[t!.table].seats[c.seat]; walkTo(s, c, st, true); }
-      else if (c.blockedT > MOVE.stuckPoofSec) teleportToSeat(s, c, emit);
+      else if (c.blockedT > MOVE.stuckPoofSec) { ds.teleports++; teleportToSeat(s, c, emit); }
       break;
     }
     case 'enterSeat': {
@@ -358,12 +371,12 @@ export function updateGuest(s: GameState, c: Cat, dt: number, emit: Emit): void 
       // 기분 좋게 먹은 손님은 통로로 나와 뿅 (통로를 비워 서버 길을 막지 않는다, 결정 로그)
       if (stepWalk(s, c, dt) && t && !t.angry) { c.y = 0; poofOut(c, emit); break; }
       if (!c.goal) { c.y = 0; c.state = 'toExit'; c.stateT = 0; walkTo(s, c, g.exit); }
-      else if (c.blockedT > MOVE.stuckPoofSec) poofOut(c, emit);
+      else if (c.blockedT > MOVE.stuckPoofSec) { ds.teleports++; poofOut(c, emit); }
       break;
     }
     case 'toExit': {
       if (stepWalk(s, c, dt)) poofOut(c, emit);
-      else if (c.blockedT > MOVE.stuckPoofSec) poofOut(c, emit);
+      else if (c.blockedT > MOVE.stuckPoofSec) { ds.teleports++; poofOut(c, emit); }
       break;
     }
     default:
